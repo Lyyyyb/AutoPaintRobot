@@ -1,0 +1,2 @@
+autopaintrobot
+-DCATKIN_DEVEL_PREFIX=/home/lyb/AutoPaintRobot/devel -DCMAKE_INSTALL_PREFIX=/home/lyb/AutoPaintRobot/install -G Unix Makefiles

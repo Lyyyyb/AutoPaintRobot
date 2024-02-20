@@ -1,0 +1,43 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/lyb/catkin_ws/devel/include/**",
+        "/home/lyb/ros_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/lyb/catkin_ws/src/atr_pkg/include/**",
+        "/home/lyb/catkin_ws/src/autopaintingrobot/include/**",
+        "/home/lyb/AutoPaintRobot/src/autopaintrobot/include/**",
+        "/home/lyb/ros_ws/src/hello_ros/include/**",
+        "/home/lyb/catkin_ws/src/imu_pkg/include/**",
+        "/home/lyb/catkin_ws/src/lidar_pkg/include/**",
+        "/home/lyb/ros_ws/src/plumbing_apis/include/**",
+        "/home/lyb/ros_ws/src/plumbing_head/include/**",
+        "/home/lyb/ros_ws/src/plumbing_head_src/include/**",
+        "/home/lyb/ros_ws/src/plumbing_param_server/include/**",
+        "/home/lyb/ros_ws/src/plumbing_pub_sub/include/**",
+        "/home/lyb/ros_ws/src/plumbing_server_client/include/**",
+        "/home/lyb/ros_ws/src/plumbing_test/include/**",
+        "/home/lyb/catkin_ws/src/qq_msgs/include/**",
+        "/home/lyb/catkin_ws/src/ssr_pkg/include/**",
+        "/home/lyb/ros_ws/src/tf01_static/include/**",
+        "/home/lyb/ros_ws/src/tf02_dynamic/include/**",
+        "/home/lyb/ros_ws/src/tf03_tfs/include/**",
+        "/home/lyb/ros_ws/src/tf04_test/include/**",
+        "/home/lyb/catkin_ws/src/vel_pkg/include/**",
+        "/home/lyb/catkin_ws/src/wpr_simulation/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

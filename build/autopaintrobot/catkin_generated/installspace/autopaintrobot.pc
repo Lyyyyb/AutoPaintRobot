@@ -1,0 +1,8 @@
+prefix=/home/lyb/AutoPaintRobot/install
+
+Name: autopaintrobot
+Description: Description of autopaintrobot
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
