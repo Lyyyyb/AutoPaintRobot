@@ -126,7 +126,7 @@ class AutoPaintingRobot:
     def navigate_to_tree(self):
         # 读取串口数据并根据数据内容更新状态
         serial_data = self.read_serial_data()
-        if serial_data == "OK":
+        if serial_data == "OK" and self.state_machine.state == 7:
             # 正常逻辑
             self.state_machine.update_state(1)
             self.state = RobotState.SPRAYING
@@ -184,7 +184,7 @@ class TrackVehicle(AutoPaintingRobot):
         angle_to_tree = math.atan2(tree_position.y, tree_position.x)
         turn_angle = angle_to_tree - current_orientation.yaw
         return turn_angle 
-
+ 
 
     def convert_to_spray_claw_frame(self, tree_position, listener):
         try:
