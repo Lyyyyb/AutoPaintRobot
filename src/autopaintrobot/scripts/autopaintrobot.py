@@ -7,7 +7,7 @@ import tf
 from tf import LookupException, ConnectivityException, ExtrapolationException
 import tf.transformations 
 import math
-
+import numpy as np
 # 定义机器人的可能状态
 class RobotState:
     NAVIGATING = 1  # 导航状态
@@ -26,8 +26,38 @@ class SprayingStateMachine:
 STEP_DISTANCE = 0.1  # 例如，每步0.1米
 distance_threshold = 1.0  # 例如，1米的阈值
 STEPS = 1 #丝杠上下移动的步数
-# 自动喷漆机器人的父类
 
+#卡尔曼滤波类
+class KalmanFilter:
+    def __init__(self, F=None, B=None, H=None, Q=None, R=None, P=None, x=None):
+        # 初始化卡尔曼滤波器的各个参数
+        self.n = F.shape[1]  # 状态向量的维度
+        self.F = F if F is not None else np.eye(self.n)  # 状态转移矩阵
+        self.H = H if H is not None else np.eye(self.n)  # 观测矩阵
+        self.B = B if B is not None else np.zeros((self.n, 1))  # 控制输入矩阵
+        self.Q = Q if Q is not None else np.eye(self.n)  # 过程噪声协方差矩阵
+        self.R = R if R is not None else np.eye(self.n)  # 观测噪声协方差矩阵
+        self.P = P if P is not None else np.eye(self.n)  # 估计误差协方差矩阵
+        self.x = x if x is not None else np.zeros((self.n, 1))  # 初始状态估计
+
+
+    def predict(self, u=0):
+        # 状态预测
+        self.x = np.dot(self.F, self.x) + np.dot(self.B, u)  # 根据模型和控制输入更新状态估计
+        self.P = np.dot(self.F, np.dot(self.P, self.F.T)) + self.Q  # 更新估计误差协方差
+        return self.x  # 返回更新后的状态估计
+
+
+    def update(self, z):
+        # 状态更新
+        y = z - np.dot(self.H, self.x)  # 计算测量残差
+        S = self.R + np.dot(self.H, np.dot(self.P, self.H.T))  # 计算残差协方差
+        K = np.dot(self.P, np.dot(self.H.T, np.linalg.inv(S)))  # 计算卡尔曼增益
+        self.x = self.x + np.dot(K, y)  # 更新状态估计
+        I = np.eye(self.n)  # 单位矩阵
+        self.P = np.dot(I - np.dot(K, self.H), self.P)  # 更新估计误差协方差
+
+# 自动喷漆机器人的父类
 class AutoPaintingRobot:
     def __init__(self):
         # 初始化ROS节点
@@ -50,7 +80,12 @@ class AutoPaintingRobot:
         # 设置TF变换的参数，分别代表模块框架和喷爪框架的位置和旋转
         self.module_transform = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # [tx, ty, tz, rx, ry, rz, rw]
         self.claw_transform = [0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # 平移和旋转的参数（平移x, y, z，旋转四元数x, y, z, w）
-
+        self.lidar_kalman_filter = KalmanFilter(
+            F=np.array([[1, 0], [0, 1]]),  # 状态转移矩阵F
+            H=np.array([[1, 0]]),          # 观测矩阵H
+            Q=np.array([[0.1, 0], [0, 0.1]]),  # 过程噪声协方差矩阵Q
+            R=np.array([[0.1]])            # 观测噪声协方差矩阵R
+        )
 
     # 激光雷达数据的回调函数
     def lidar_callback(self, data):
@@ -153,6 +188,13 @@ class TrackVehicle(AutoPaintingRobot):
         self.moving_forward_or_forward = True  # True 表示前进，False 表示后退
         # 初始化串口通信
         self.serial_port = serial.Serial('/dev/ttyUSB', 9600, timeout=1)
+
+        self.imu_kalman_filter = KalmanFilter(
+            F=np.array([[1]]),  # 状态转移矩阵F
+            H=np.array([[1]]),  # 观测矩阵H
+            Q=np.array([[0.1]]),  # 过程噪声协方差矩阵Q
+            R=np.array([[0.1]])  # 观测噪声协方差矩阵R
+        )
 
     def imu_callback(self, data):
 
@@ -527,7 +569,7 @@ if __name__ == '__main__':
             # 如果以上条件都不满足，则执行其他或默认的操作。
             # 在这里，暂时没有定义任何操作（使用 pass 语句）。
             pass
-        
+
         #调用回调函数
         rospy.spin()        
         # 维持循环频率
