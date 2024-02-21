@@ -505,6 +505,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():        
         # 发布TF变换
         module.publish_transforms()
+
         # 对于履带车和直线模组，#根据机器人的状态执行相应的操作
         # 主循环中的状态检查和相应的行动
         if module.state == RobotState.NAVIGATING:
@@ -526,6 +527,9 @@ if __name__ == '__main__':
             # 如果以上条件都不满足，则执行其他或默认的操作。
             # 在这里，暂时没有定义任何操作（使用 pass 语句）。
             pass
-
+        
+        #调用回调函数
+        rospy.spin()        
         # 维持循环频率
         rate.sleep()
+
