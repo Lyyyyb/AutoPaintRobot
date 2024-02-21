@@ -293,7 +293,7 @@ class TrackVehicle(AutoPaintingRobot):
                 # 发送控制指令
                 self.send_serial_command(turn_command)
 
-
+                #更新状态量
                 self.state_machine.update_state(2)
 
             elif self.state_machine.state == 3:
@@ -308,7 +308,7 @@ class TrackVehicle(AutoPaintingRobot):
 
                 # 调用移动函数
                 self.move_towards_target(STEP_DISTANCE, distance_threshold)
-
+                #更新状态量
                 self.state_machine.update_state(4)
 
             elif self.state_machine.state == 5:
@@ -320,7 +320,7 @@ class TrackVehicle(AutoPaintingRobot):
 
                 # 调用移动函数
                 self.move_towards_target(STEP_DISTANCE, distance_threshold)
-
+                #更新状态量
                 self.state_machine.update_state(6)
 
         elif serial_data == "ERROR":
@@ -424,7 +424,7 @@ class LinearModule(AutoPaintingRobot):
                 """
                 #控制丝杠和喷爪
                 self.move_and_operate_spray_claw(STEP_DISTANCE)
-
+                #更新状态量
                 self.state_machine.update_state(3)
 
             elif self.state_machine.state == 4:
@@ -440,14 +440,16 @@ class LinearModule(AutoPaintingRobot):
                 # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
                 move_command = self.create_serial_command(STEPS, STEPS, 1000, 1)
                 self.send_serial_command(move_command)
-
+                #更新状态量
                 self.state_machine.update_state(5)
 
             elif self.state_machine.state == 6:
                 """
                 喷爪闭合
                 """
+                #闭合喷爪
                 self.close_spray_claw()
+                #更新状态量
                 self.state_machine.update_state(7)
 
         elif serial_data == "ERROR":
