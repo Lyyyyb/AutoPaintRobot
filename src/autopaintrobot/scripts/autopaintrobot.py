@@ -27,6 +27,7 @@ STEP_DISTANCE = 0.1  # 例如，每步0.1米
 distance_threshold = 1.0  # 例如，1米的阈值
 STEPS = 1 #丝杠上下移动的步数
 # 自动喷漆机器人的父类
+
 class AutoPaintingRobot:
     def __init__(self):
         # 初始化ROS节点
