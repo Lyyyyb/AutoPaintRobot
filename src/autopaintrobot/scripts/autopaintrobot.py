@@ -22,6 +22,7 @@ class SprayingStateMachine:
         # 更新状态机的状态
         self.state = new_state
 
+#步进电机一步滑台移动的距离
 STEP_DISTANCE = None
 
 # 自动喷漆机器人的父类
