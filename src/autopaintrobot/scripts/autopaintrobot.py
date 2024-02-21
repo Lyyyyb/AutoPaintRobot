@@ -505,8 +505,6 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():        
         # 发布TF变换
         module.publish_transforms()
-        # 调用回调函数
-        rospy.spin()
         # 对于履带车和直线模组，#根据机器人的状态执行相应的操作
         # 主循环中的状态检查和相应的行动
         if module.state == RobotState.NAVIGATING:
