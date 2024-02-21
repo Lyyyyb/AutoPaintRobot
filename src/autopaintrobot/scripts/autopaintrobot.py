@@ -5,13 +5,13 @@ from geometry_msgs.msg import Twist
 import serial
 import tf
 from tf import LookupException, ConnectivityException, ExtrapolationException
-import tf.transformations
+import tf.transformations 
 import math
+
 # 定义机器人的可能状态
 class RobotState:
     NAVIGATING = 1  # 导航状态
     SPRAYING = 2    # 喷涂状态
-
 
 # 状态机类，用于管理喷涂过程中的状态
 class SprayingStateMachine:
@@ -136,9 +136,24 @@ class TrackVehicle(AutoPaintingRobot):
 
     # 从IMU数据中获取朝向
     def get_orientation_from_imu(self, data):
-        quaternion = [data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w]
-        euler = tf.transformations.euler_from_quaternion(quaternion)
-        return euler
+        # quaternion = [data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w]
+        # euler = tf.transformations.euler_from_quaternion(quaternion)
+        # return euler
+        if data.orientation_covariance[0] < 0:
+            return
+        
+        quaternion = (data.orientation.x,data.orientation.y,data.orientation.z,data.orientation.w)
+        
+        (roll,pitch,yaw) = tf.transformations.euler_from_quaternion(quaternion)
+        
+        roll = roll*180/math.pi
+        pitch = pitch*180/math.pi
+        yaw = yaw*180/math.pi
+
+        rospy.loginfo("欧拉角：滚转：%f 俯仰：%f 偏航：%f",roll,pitch,yaw)
+
+        target_angle = 90
+        diff_angle = target_angle - yaw
     
     def calculate_turn_angle(self, tree_position, current_orientation):
         # 假设current_orientation为机器人朝向的欧拉角
@@ -212,11 +227,19 @@ class TrackVehicle(AutoPaintingRobot):
                 # 计算转动角度
                 turn_angle = self.calculate_turn_angle(tree_position, current_orientation)
 
+                # 确定机器人的速度和停止标志
+                RobotV = 100  # 假设的速度值
+                StopFlag = 0  # 假设的停止标志，0 表示不停止
+
+                # 计算YawRate（偏航率），假设与转动角度相关
+                YawRate = turn_angle * 0.1  # 这里的0.1是一个假设的比例因子，需要根据实际情况调整
+
                 # 创建控制指令
-                turn_command = self.create_serial_command(turn_angle)
+                turn_command = self.create_serial_command(RobotV, YawRate, StopFlag)
 
                 # 发送控制指令
                 self.send_serial_command(turn_command)
+
 
                 self.state_machine.update_state(2)
 
@@ -237,9 +260,26 @@ class TrackVehicle(AutoPaintingRobot):
                 if tree_position_spray_claw_frame is not None:
                     # 计算机器人需要移动的距离，以便喷爪能够到达树木的位置
                     movement_distance = self.calculate_movement_for_spray(tree_position_spray_claw_frame)
-                    
-                # 发送移动指令，使机器人移动计算出的距离
-                self.send_serial_command(movement_distance)
+                    # 设置距离阈值，例如 1 米
+                    distance_threshold = 1.0
+
+                    if movement_distance < distance_threshold:
+                        # 如果距离小于阈值，停止车辆
+                        RobotV = 0  # 设置速度为 0
+                        YawRate = 0  # 偏航率设为 0
+                        StopFlag = 1  # 设置停止标志
+                    else:
+                        # 如果距离大于阈值，计算速度和偏航率
+                        # 确定机器人的速度和停止标志
+                        RobotV = 100  # 假设的速度值
+                        StopFlag = 0  # 假设的停止标志，0 表示不停止
+
+                        # 计算YawRate（偏航率），假设与转动角度相关
+                        YawRate = turn_angle * 0.1  # 这里的0.1是一个假设的比例因子，需要根据实际情况调整
+
+                    # 创建并发送控制指令
+                    turn_command = self.create_serial_command(RobotV, YawRate, StopFlag)
+                    self.send_serial_command(turn_command)
 
                 self.state_machine.update_state(4)
 
@@ -257,9 +297,26 @@ class TrackVehicle(AutoPaintingRobot):
                 if tree_position_spray_claw_frame is not None:
                     # 计算机器人需要移动的距离，以便喷爪能够到达树木的位置
                     movement_distance = self.calculate_movement_for_spray(tree_position_spray_claw_frame)
-                    
-                # 发送移动指令，使机器人移动计算出的距离
-                self.send_serial_command(movement_distance)
+                    # 设置距离阈值，例如 1 米
+                    distance_threshold = 1.0
+
+                    if movement_distance < distance_threshold:
+                        # 如果距离小于阈值，计算速度和偏航率
+                        # 确定机器人的速度和停止标志
+                        RobotV = 100  # 假设的速度值
+                        StopFlag = 0  # 假设的停止标志，0 表示不停止
+
+                        # 计算YawRate（偏航率），假设与转动角度相关
+                        YawRate = turn_angle * 0.1  # 这里的0.1是一个假设的比例因子，需要根据实际情况调整
+                    else:
+                        # 如果距离大于阈值，停止车辆
+                        RobotV = 0  # 设置速度为 0
+                        YawRate = 0  # 偏航率设为 0
+                        StopFlag = 1  # 设置停止标志
+
+                    # 创建并发送控制指令
+                    turn_command = self.create_serial_command(RobotV, YawRate, StopFlag)
+                    self.send_serial_command(turn_command)
 
                 self.state_machine.update_state(6)
 
@@ -341,26 +398,22 @@ class LinearModule(AutoPaintingRobot):
                 """
                 # 检测树木的位置，使用来自激光雷达的数据
                 tree_position = self.detect_tree_from_lidar(self.lidar_data)
-                # 此方法应从激光雷达数据中识别树木的位置，并返回它的坐标
 
                 # 将检测到的树木位置从激光雷达坐标系转换到模块坐标系
                 tree_position_module_frame = self.convert_to_module_frame(tree_position, self.listener)
-                # 这需要tf.TransformListener来转换坐标，从激光雷达坐标系到喷漆模块的坐标系
 
-                # 检查转换后的坐标是否有效
                 if tree_position_module_frame is not None:
                     # 如果有效，计算从当前位置到目标位置的移动距离
                     movement_distance = self.calculate_movement_for_module(tree_position_module_frame)
-                    # 这个方法应计算出机器人需要移动多远以便其喷漆模块与树木位置对齐
 
                     # 根据移动距离计算出步进电机需要走的步数
                     steps = self.calculate_steps_for_motor(movement_distance, STEP_DISTANCE)
-                    # STEP_DISTANCE 是每步的距离，用于从移动距离计算步数
 
-                    # 发送串口指令以控制机器人移动相应的步数
-                    self.send_serial_command(steps)
-                    # 这个方法应发送控制指令到机器人，使其移动计算出的步数
-
+                    # 创建并发送串口指令以控制机器人移动相应的步数
+                    # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
+                    move_command = self.create_serial_command(steps, steps, 1000, 1)
+                    self.send_serial_command(move_command)
+                    self.open_spray_claw()
 
                 self.state_machine.update_state(3)
 
@@ -374,11 +427,16 @@ class LinearModule(AutoPaintingRobot):
                 # 发送指令以闭合喷涂装置的喷爪
                 self.close_spray_claw()
 
-                # 再次计算步进电机需要走的步数，基于新的移动距离
+                # 如果有效，计算从当前位置到目标位置的移动距离
+                movement_distance = self.calculate_movement_for_module(tree_position_module_frame)
+
+                # 根据移动距离计算出步进电机需要走的步数
                 steps = self.calculate_steps_for_motor(movement_distance, STEP_DISTANCE)
 
-                # 发送串口指令，让机器人执行相应的步数移动
-                self.send_serial_command(steps)
+                # 创建并发送串口指令以控制机器人移动相应的步数
+                # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
+                move_command = self.create_serial_command(steps, steps, 1000, 1)
+                self.send_serial_command(move_command)
 
                 self.state_machine.update_state(5)
 
