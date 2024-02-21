@@ -45,6 +45,11 @@ class AutoPaintingRobot:
         self.lidar_data = None
         #初始化串口
         self.serial_port = None
+        # 直接在代码中设置TF变换的参数   
+        # 设置TF变换的参数，分别代表模块框架和喷爪框架的位置和旋转
+        self.module_transform = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # [tx, ty, tz, rx, ry, rz, rw]
+        self.claw_transform = [0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # 平移和旋转的参数（平移x, y, z，旋转四元数x, y, z, w）
+
 
     # 激光雷达数据的回调函数
     def lidar_callback(self, data):
@@ -92,14 +97,29 @@ class AutoPaintingRobot:
     
         # 发布TF变换
     def publish_transforms(self):
+        
         current_time = rospy.Time.now()
-        # 发布两个TF变换
-        self.send_transform(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, current_time, "/lidar_frame", "/module_frame")
-        self.send_transform(0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, current_time, "/lidar_frame", "/spray_claw_frame")
+
+        # 使用成员变量发布TF变换
+        # 使用成员变量发布TF变换，*号表示从列表解包参数
+        self.send_transform(*self.module_transform, current_time, "/lidar_frame", "/module_frame")
+        self.send_transform(*self.claw_transform, current_time, "/lidar_frame", "/spray_claw_frame")
 
     # 发送单个TF变换
     def send_transform(self, tx, ty, tz, rx, ry, rz, rw, time, parent_frame, child_frame):
+        # 此方法用于发送一个TF变换。
+
+        # 参数说明：
+        # tx, ty, tz: 目标坐标系相对于源坐标系的平移分量（x, y, z轴上的平移）。
+        # rx, ry, rz, rw: 目标坐标系相对于源坐标系的旋转，表示为四元数（x, y, z, w）。
+        # time: 变换的时间戳，通常使用当前时间。
+        # parent_frame: 源坐标系的名称。
+        # child_frame: 目标坐标系的名称。
+
+        # 使用tf库的TransformBroadcaster来发布变换。
+        # 这个变换描述了在指定时间戳时，从parent_frame坐标系到child_frame坐标系的空间关系。
         self.tf_broadcaster.sendTransform((tx, ty, tz), (rx, ry, rz, rw), time, child_frame, parent_frame)
+
     
     # 导航到树木的逻辑
     def navigate_to_tree(self):
@@ -156,10 +176,7 @@ class TrackVehicle(AutoPaintingRobot):
 
         # 返回转换后的欧拉角
         return current_orientation
-
-        
-
-    
+   
     def calculate_turn_angle(self, tree_position, current_orientation):
         # 假设current_orientation为机器人朝向的欧拉角
         # 计算机器人当前朝向与树木之间的角度差
@@ -170,15 +187,25 @@ class TrackVehicle(AutoPaintingRobot):
 
     def convert_to_spray_claw_frame(self, tree_position, listener):
         try:
-            # 等待坐标系的转换关系
+            # 等待从激光雷达坐标系（/lidar_frame）到喷爪坐标系（/spray_claw_frame）的TF变换关系变得可用。
+            # 这里设置最多等待4秒钟，rospy.Duration(4.0)表示等待时间。
             self.listener.waitForTransform("/spray_claw_frame", "/lidar_frame", rospy.Time(0), rospy.Duration(4.0))
-            # 进行坐标转换
+
+            # 进行坐标转换：将树木的位置从激光雷达坐标系转换到喷爪坐标系。
+            # tree_position 应是一个包含树木位置的geometry_msgs/PointStamped消息。
+            # 这个转换基于之前通过TF广播的坐标系之间的关系。
             tree_position_spray_claw_frame = self.listener.transformPoint("/spray_claw_frame", tree_position)
+
+            # 返回转换后的树木位置。
             return tree_position_spray_claw_frame
-        
+
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            # 如果在坐标转换过程中发生异常，比如找不到坐标系（LookupException）、
+            # 网络连接问题（ConnectivityException）或者时间外推错误（ExtrapolationException），
+            # 则记录错误信息并返回None。
             rospy.logerr("TF转换异常: %s", e)
             return None
+
         
     def calculate_movement_for_spray(self, tree_position_spray_claw_frame):
         # 假设计算得到的距离是机器人与树木之间的直线距离
@@ -210,7 +237,7 @@ class TrackVehicle(AutoPaintingRobot):
         # 计算校验和，用于验证指令的完整性
         checksum = (header + StopFlag + rightVelHigh + rightVelLow + 
                     leftVelHigh + leftVelLow) & 0xFF
-
+        
         # 将指令各部分组装成字节序列并返回
         return bytes([header, StopFlag, rightVelHigh, rightVelLow, 
                     leftVelHigh, leftVelLow, checksum, ender])
@@ -339,8 +366,6 @@ class LinearModule(AutoPaintingRobot):
         # 初始化串口通信
         self.serial_port = serial.Serial('/dev/ttyUSB1', 9600, timeout=1)
 
-
-
     # 创建控制直线模组的串口指令
     def create_serial_command(self, x, y, speed, mode):
         command = f"move X{x} Y{y} speed{speed} mode{mode}"
@@ -355,16 +380,26 @@ class LinearModule(AutoPaintingRobot):
 
 
     def convert_to_module_frame(self, tree_position, listener):
-        # 假设listener是一个tf.TransformListener对象
+        # 这个方法用于将树木位置从激光雷达坐标系转换到模块坐标系
+
         try:
-            # 等待坐标系的转换关系
+            # 等待激光雷达坐标系（/lidar_frame）到模块坐标系（/module_frame）的转换关系变得可用
+            # 此处等待时间设置为4秒，可根据实际需要调整
             self.listener.waitForTransform("/module_frame", "/lidar_frame", rospy.Time(0), rospy.Duration(4.0))
-            # 进行坐标转换
+
+            # 将树木位置从激光雷达坐标系转换到模块坐标系
+            # tree_position 应该是一个包含树木位置的geometry_msgs/PointStamped消息
             tree_position_module_frame = self.listener.transformPoint("/module_frame", tree_position)
+
+            # 返回转换后的树木位置
             return tree_position_module_frame
+
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            # 如果在转换过程中出现异常（例如，找不到坐标系、连接问题或时间外推异常）
+            # 则记录错误信息并返回None
             rospy.logerr("TF转换异常: %s", e)
             return None
+
         
     def calculate_movement_for_module(self, tree_position_module_frame):
         # 假设直线模组的起点为(0,0,0)，计算滑台需要移动的距离
@@ -472,13 +507,26 @@ if __name__ == '__main__':
         # 调用回调函数
         rospy.spin()
         # 对于履带车和直线模组，#根据机器人的状态执行相应的操作
+        # 主循环中的状态检查和相应的行动
         if module.state == RobotState.NAVIGATING:
+            # 如果直线模组的状态是导航（NAVIGATING）状态，
+            # 则调用 navigate_to_tree 方法，
             module.navigate_to_tree()
+
         elif vehicle.state == RobotState.SPRAYING:
+            # 如果履带车的状态是喷涂（SPRAYING）状态，
+            # 则调用 spray_tree 方法，
             vehicle.spray_tree()
+
         elif module.state == RobotState.SPRAYING:
+            # 如果直线模组的状态也是喷涂状态，
+            # 则调用其 spray_tree 方法，
             module.spray_tree()
+
         else:
-            pass        
+            # 如果以上条件都不满足，则执行其他或默认的操作。
+            # 在这里，暂时没有定义任何操作（使用 pass 语句）。
+            pass
+
         # 维持循环频率
         rate.sleep()
