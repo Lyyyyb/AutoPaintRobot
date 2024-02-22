@@ -8,10 +8,10 @@ import tf.transformations
 import numpy as np
 import globals 
 
-#步进电机一步滑台移动的距离
-STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
-distance_threshold = globals.get_distance_threshold()  # 例如，1米的阈值
-STEPS = globals.get_steps #丝杠上下移动的步数
+# #步进电机一步滑台移动的距离
+# STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
+# distance_threshold = globals.get_distance_threshold()  # 例如，1米的阈值
+# STEPS = globals.get_steps #丝杠上下移动的步数
 
 # 履带车型机器人，继承自AutoPaintingRobot
 class TrackVehicle(AutoPaintingRobot):
@@ -210,7 +210,7 @@ class TrackVehicle(AutoPaintingRobot):
                 self.moving_forward_or_forward = True  # 或 False，根据需要设置
 
                 # 调用移动函数
-                self.move_towards_target(distance_threshold)
+                self.move_towards_target(globals.get_distance_threshold())
                 #更新状态量
                 self.state_machine.update_state(4)
 
@@ -222,7 +222,7 @@ class TrackVehicle(AutoPaintingRobot):
                 self.moving_forward_or_forward = False  # 或 False，根据需要设置
 
                 # 调用移动函数
-                self.move_towards_target(distance_threshold)
+                self.move_towards_target(globals.get_distance_threshold())
                 #更新状态量
                 self.state_machine.update_state(6)
 

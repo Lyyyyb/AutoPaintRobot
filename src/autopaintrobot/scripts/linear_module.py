@@ -6,10 +6,10 @@ from robot_state import RobotState
 import tf
 import globals
 
-#步进电机一步滑台移动的距离
-STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
-distance_threshold = globals.get_distance_threshold()  # 例如，1米的阈值
-STEPS = globals.get_steps #丝杠上下移动的步数
+# #步进电机一步滑台移动的距离
+# STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
+# distance_threshold = globals.get_distance_threshold()  # 例如，1米的阈值
+# STEPS = globals.get_steps #丝杠上下移动的步数
 
 # 直线模组，继承自AutoPaintingRobot
 class LinearModule(AutoPaintingRobot):
@@ -56,7 +56,7 @@ class LinearModule(AutoPaintingRobot):
         
     def calculate_movement_for_module(self, tree_position_module_frame):
         # 假设直线模组的起点为(0,0,0)，计算滑台需要移动的距离
-        movement_distance = tree_position_module_frame.point.x  # 根据实际情况可能需要调整
+        movement_distance = tree_position_module_frame.x  # 根据实际情况可能需要调整
         return movement_distance
     
     def move_and_operate_spray_claw(self, STEP_DISTANCE):
@@ -111,7 +111,7 @@ class LinearModule(AutoPaintingRobot):
                 调整X轴丝杠，正对树，张开喷爪
                 """
                 #控制丝杠和喷爪
-                self.move_and_operate_spray_claw(STEP_DISTANCE)
+                self.move_and_operate_spray_claw(globals.get_step_distance())
                 #更新状态量
                 self.state_machine.update_state(3)
 
@@ -126,7 +126,7 @@ class LinearModule(AutoPaintingRobot):
                 self.close_spray_claw()
                 # 创建并发送串口指令以控制机器人移动相应的步数
                 # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
-                move_command = self.create_serial_command(STEPS, STEPS, 1000, 1)
+                move_command = self.create_serial_command(0, globals.get_steps(), 1000, 1)
                 self.send_serial_command(move_command)
                 #更新状态量
                 self.state_machine.update_state(5)

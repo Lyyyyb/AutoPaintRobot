@@ -299,12 +299,12 @@ class TrackVehicle(AutoPaintingRobot):
         tree_position = self.detect_tree_from_lidar(self.lidar_data)
 
         # 将检测到的树木位置转换到模块坐标系（例如，喷漆模块的坐标系）
-        tree_position_module_frame = self.convert_to_module_frame(tree_position, self.tf_listener)
+        tree_position_module_frame = self.convert_to_spray_claw_frame(tree_position, self.listener)
 
         # 检查转换后的坐标是否有效
         if tree_position_module_frame is not None:
             # 计算从当前位置到树木位置的移动距离
-            movement_distance = self.calculate_movement_for_module(tree_position_module_frame)
+            movement_distance = self.calculate_movement_for_spray(tree_position_module_frame)
 
             # 根据移动方向和距离阈值判断是前进、后退还是停止
             if self.moving_forward and movement_distance >= distance_threshold:
