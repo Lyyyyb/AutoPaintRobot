@@ -1,0 +1,12 @@
+<launch>
+    <!-- 手柄控制 -->
+    <node pkg="joy" type="joy_node" name="joy_node" />
+
+    <!-- 与cmake里面的add_executable有关 -->
+    <node pkg="robot_bringup" type="joy_control" name="joy_control" output="screen"> 
+        <!-- 给axis_linear参数赋值 -->
+        <param name="axis_linear" value="1" type="int" />
+        <param name="axis_angular" value="3" type="int" />
+    </node>
+
+</launch> 
