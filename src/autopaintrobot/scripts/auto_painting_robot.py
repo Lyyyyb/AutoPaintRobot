@@ -2,9 +2,10 @@ import rospy
 from sensor_msgs.msg import LaserScan
 from robot_state import RobotState,SprayingStateMachine
 from kalman_filter import KalmanFilter
-import tf
 import numpy as np
 import serial
+import tf2_ros
+import geometry_msgs.msg
 
 # 自动喷漆机器人的父类
 class AutoPaintingRobot:
@@ -17,10 +18,14 @@ class AutoPaintingRobot:
         self.state = RobotState.NAVIGATING
         # 初始化状态机
         self.state_machine = SprayingStateMachine()
-        # 初始化TF广播器
-        self.tf_broadcaster = tf.TransformBroadcaster()
-        # 初始化tf监听器
-        self.listener = tf.TransformListener()
+
+        # tf2_ros.TransformBroadcaster用于发布坐标系之间的变换关系
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        # tf2_ros.Buffer用于存储坐标系之间的变换关系
+        self.tf_buffer = tf2_ros.Buffer()
+        # tf2_ros.TransformListener用于监听和接收坐标系之间的变换关系
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+
         #初始化雷达数据
         self.lidar_data = None
         #初始化串口
@@ -92,24 +97,31 @@ class AutoPaintingRobot:
 
     # 发送单个TF变换
     def send_transform(self, tx, ty, tz, rx, ry, rz, rw, time, parent_frame, child_frame):
-        # 此方法用于发送一个TF变换。
 
-        # 参数说明：
-        # tx, ty, tz: 目标坐标系相对于源坐标系的平移分量（x, y, z轴上的平移）。
-        # rx, ry, rz, rw: 目标坐标系相对于源坐标系的旋转，表示为四元数（x, y, z, w）。
-        # time: 变换的时间戳，通常使用当前时间。
-        # parent_frame: 源坐标系的名称。
-        # child_frame: 目标坐标系的名称。
+        t = geometry_msgs.msg.TransformStamped()  # 创建一个 TransformStamped 消息对象
+        t.header.stamp = time                     # 设置消息的时间戳
+        t.header.frame_id = parent_frame          # 设置父坐标系的名称
+        t.child_frame_id = child_frame            # 设置子坐标系的名称
 
-        # 使用tf库的TransformBroadcaster来发布变换。
-        # 这个变换描述了在指定时间戳时，从parent_frame坐标系到child_frame坐标系的空间关系。
-        self.tf_broadcaster.sendTransform((tx, ty, tz), (rx, ry, rz, rw), time, child_frame, parent_frame)
+        # 设置坐标变换中的平移部分
+        t.transform.translation.x = tx            # 设置x轴上的平移
+        t.transform.translation.y = ty            # 设置y轴上的平移
+        t.transform.translation.z = tz            # 设置z轴上的平移
+
+        # 设置坐标变换中的旋转部分（使用四元数）
+        t.transform.rotation.x = rx               # 四元数的x分量
+        t.transform.rotation.y = ry               # 四元数的y分量
+        t.transform.rotation.z = rz               # 四元数的z分量
+        t.transform.rotation.w = rw               # 四元数的w分量（实部）
+
+        self.tf_broadcaster.sendTransform(t)      # 使用tf2的广播器发送变换
+
 
     
     # 导航到树木的逻辑
     def navigate_to_tree(self):
         # 读取串口数据并根据数据内容更新状态
-        serial_data = self.read_serial_data()
+        serial_data = self.read_serial_data()  
         if serial_data == "OK" and self.state_machine.state == 7:
             # 正常逻辑
             self.state_machine.update_state(1)
