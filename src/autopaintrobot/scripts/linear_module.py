@@ -115,7 +115,7 @@ class LinearModule(AutoPaintingRobot):
         self.send_movement_command(STEP_X, 0)
 
         # 控制喷爪的操作
-        self.open_spray_claw()
+        #self.open_spray_claw()
 
 
     
@@ -160,7 +160,7 @@ class LinearModule(AutoPaintingRobot):
                 喷爪闭合，控制Z轴丝杠，使Y轴丝杠上下运动，同时控制水泵喷水，喷涂结束，喷爪张开
                 """
                 # 发送指令以闭合喷涂装置的喷爪
-                self.close_spray_claw()
+                #self.close_spray_claw()
                 # 创建并发送串口指令以控制机器人移动相应的步数
                 # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
                 self.send_movement_command(0, self.STEP_Y)
@@ -172,7 +172,7 @@ class LinearModule(AutoPaintingRobot):
                 喷爪闭合
                 """
                 #闭合喷爪
-                self.close_spray_claw()
+                #self.close_spray_claw()
                 #更新状态量
                 self.state_machine.update_state(7)
 

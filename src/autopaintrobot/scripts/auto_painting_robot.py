@@ -125,6 +125,7 @@ class AutoPaintingRobot:
         if serial_data == "OK" and self.state_machine.state == 7:
             # 正常逻辑
             self.state_machine.update_state(1)
+            # 导航完成切换为喷涂状态
             self.state = RobotState.SPRAYING
         elif serial_data == "ERROR":
             # 错误处理

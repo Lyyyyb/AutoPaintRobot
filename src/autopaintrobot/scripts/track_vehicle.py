@@ -211,8 +211,8 @@ class TrackVehicle(AutoPaintingRobot):
                 current_orientation = self.get_orientation_from_imu(self.imu_data)  # 假设imu_data是已获取的数据
 
                 # 计算转动角度
-                turn_angle = self.calculate_turn_angle(tree_position, current_orientation)
-
+                #turn_angle = self.calculate_turn_angle(tree_position, current_orientation)
+                turn_angle = 0
                 # 确定机器人的速度和停止标志
                 RobotV = 100  # 假设的速度值
                 StopFlag = 0  # 假设的停止标志，0 表示不停止
