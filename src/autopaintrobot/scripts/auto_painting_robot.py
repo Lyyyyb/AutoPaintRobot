@@ -9,15 +9,21 @@ import geometry_msgs.msg
 
 # 自动喷漆机器人的父类
 class AutoPaintingRobot:
+    # 定义类变量 state，初始值为 RobotState.NAVIGATING
+    state = RobotState.NAVIGATING
+
+    # 定义类变量 state_machine，初始值为一个 SprayingStateMachine 类的实例
+    state_machine = SprayingStateMachine()
+    
     def __init__(self):
         # 初始化ROS节点
         rospy.init_node('auto_painting_robot')
         # 订阅激光雷达数据
         self.lidar_sub = rospy.Subscriber('/lidar', LaserScan, self.lidar_callback)
         # 设置初始状态为导航
-        self.state = RobotState.NAVIGATING
+        #self.state = RobotState.NAVIGATING 
         # 初始化状态机
-        self.state_machine = SprayingStateMachine()
+        #self.state_machine = SprayingStateMachine()
 
         # tf2_ros.TransformBroadcaster用于发布坐标系之间的变换关系
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -122,11 +128,11 @@ class AutoPaintingRobot:
     def navigate_to_tree(self):
         # 读取串口数据并根据数据内容更新状态
         serial_data = self.read_serial_data()  
-        if serial_data == "OK" and self.state_machine.state == 7:
+        if serial_data == "OK" and AutoPaintingRobot.state_machine.state == 7:
             # 正常逻辑
-            self.state_machine.update_state(1)
+            AutoPaintingRobot.state_machine.update_state(1)
             # 导航完成切换为喷涂状态
-            self.state = RobotState.SPRAYING
+            AutoPaintingRobot.state = RobotState.SPRAYING
         elif serial_data == "ERROR":
             # 错误处理
             rospy.logwarn("Serial communication error during navigation")
@@ -140,4 +146,4 @@ class AutoPaintingRobot:
         # 喷树逻辑
         # ...
         # 假设喷树完成，切换回导航状态
-        self.state = RobotState.NAVIGATING
+        AutoPaintingRobot.state = RobotState.NAVIGATING

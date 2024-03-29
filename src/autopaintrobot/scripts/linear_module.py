@@ -23,6 +23,7 @@ class LinearModule(AutoPaintingRobot):
         self.STEP_Y = step_y  # 将Y轴步长（Y轴每步移动的距离）保存为成员变量
         self.speed = speed  # 将速度配置（移动速度）保存为成员变量
         self.mode = mode  # 将模式设置（可能影响机器人的行为或配置）保存为成员变量
+        self.STEP_X = 0 # X轴需要动的步数初始化
 
     # 创建控制直线模组的串口指令
     def create_serial_command(self,x, y, speed, mode):
@@ -108,11 +109,11 @@ class LinearModule(AutoPaintingRobot):
         movement_distance = self.calculate_movement_for_module(tree_position_module_frame)
 
         # 根据移动距离计算出步进电机需要走的步数
-        STEP_X = self.calculate_steps_for_motor(movement_distance, self.step_distance)
+        self.STEP_X = self.calculate_steps_for_motor(movement_distance, self.step_distance)
 
         # 创建并发送串口指令以控制机器人移动相应的步数
         # 发送移动指令
-        self.send_movement_command(STEP_X, 0)
+        self.send_movement_command(self.STEP_X, 0)
 
         # 控制喷爪的操作
         #self.open_spray_claw()
@@ -139,7 +140,7 @@ class LinearModule(AutoPaintingRobot):
         serial_data = self.read_serial_data()
 
         if serial_data == "OK":
-            if self.state_machine.state == 2:
+            if AutoPaintingRobot.state_machine.state == 2:
                 """
                 调整车的朝向后，使用三维雷达获取树的坐标，通过TF坐标转换成相对于X轴直线模组最左侧的坐标，
                 通过坐标信息计算出X轴直线模组的滑台需要移动多少距离，进而得到X轴直线模组的步进电机需要运动的步数，
@@ -150,9 +151,9 @@ class LinearModule(AutoPaintingRobot):
                 #控制丝杠和喷爪
                 self.move_and_operate_spray_claw(self.step_distance)
                 #更新状态量
-                self.state_machine.update_state(3)
+                AutoPaintingRobot.state_machine.update_state(3)
 
-            elif self.state_machine.state == 4:
+            elif AutoPaintingRobot.state_machine.state == 4:
                 """
                 控制水泵喷漆，控制Z轴直线模组的滑台，使Y轴直线模组上下移动对树均匀喷漆。
                 控制Y轴直线模组末端的喷爪张开
@@ -165,16 +166,16 @@ class LinearModule(AutoPaintingRobot):
                 # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
                 self.send_movement_command(0, self.STEP_Y)
                 #更新状态量
-                self.state_machine.update_state(5)
+                AutoPaintingRobot.state_machine.update_state(5)
 
-            elif self.state_machine.state == 6:
+            elif AutoPaintingRobot.state_machine.state == 6:
                 """
                 喷爪闭合
                 """
                 #闭合喷爪
                 #self.close_spray_claw()
                 #更新状态量
-                self.state_machine.update_state(7)
+                AutoPaintingRobot.state_machine.update_state(7)
 
         elif serial_data == "ERROR":
             # 错误处理逻辑

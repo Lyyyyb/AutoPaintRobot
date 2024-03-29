@@ -196,7 +196,7 @@ class TrackVehicle(AutoPaintingRobot):
         serial_data = self.read_serial_data()
 
         if serial_data == "OK":
-            if self.state_machine.state == 1:
+            if AutoPaintingRobot.state_machine.state == 1:
                 """
                 使用三维雷达获取树的坐标及距离，IMU获取履带车的朝向计算出车要转动的角度，
                 转换成控制指令，通过串口发送给下位机，调整车的朝向，并且需要考虑履带车和Y轴直线模组的长度，
@@ -225,9 +225,9 @@ class TrackVehicle(AutoPaintingRobot):
                 self.send_serial_command(RobotV, YawRate, StopFlag)
 
                 #更新状态量
-                self.state_machine.update_state(2)
+                AutoPaintingRobot.state_machine.update_state(2)
 
-            elif self.state_machine.state == 3:
+            elif AutoPaintingRobot.state_machine.state == 3:
                 """
                 使用三维雷达获取树的坐标及距离，通过TF坐标转换成相对于喷爪末端的坐标和距离，
                 计算出车要移动的距离，转换成控制指令，通过串口发送给下位机，喷爪闭合。
@@ -240,9 +240,9 @@ class TrackVehicle(AutoPaintingRobot):
                 # 调用移动函数
                 self.move_towards_target(self.distance_threshold)
                 #更新状态量
-                self.state_machine.update_state(4)
+                AutoPaintingRobot.state_machine.update_state(4)
 
-            elif self.state_machine.state == 5:
+            elif AutoPaintingRobot.state_machine.state == 5:
                 """
                 使车后退合适距离
                 """
@@ -252,7 +252,7 @@ class TrackVehicle(AutoPaintingRobot):
                 # 调用移动函数
                 self.move_towards_target(self.distance_threshold)
                 #更新状态量
-                self.state_machine.update_state(6)
+                AutoPaintingRobot.state_machine.update_state(6)
 
         elif serial_data == "ERROR":
             # 错误处理逻辑

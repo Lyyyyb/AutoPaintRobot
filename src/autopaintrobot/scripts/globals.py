@@ -1,9 +1,14 @@
 # 定义全局变量
-step_distance = 0.1  # 步进电机一步滑台移动的距离，例如每步0.1米
+step_distance = 0.00001171875  # 步进电机一步滑台移动的距离，例如每步0.1米
 distance_threshold = 1.0  # 距离阈值，例如1米
 STEP_Y = 1  # 丝杠上下移动的步数
-mode = 0  # 运行模式
-speed = 0  # 运行速度
+mode = 1  # 运行模式
+speed = 1000  # 运行速度
+route = 600 # 行程 600mm
+lead = 75 # 电机转动一圈滑台移动的距离 75mm
+step_angle = 1.8 # 步距角 1.8度
+segmentation = 32 # 细分 32细分
+actual_step_angle = 1.8/32  
 
 # 设置步进电机一步滑台移动的距离
 def set_step_distance(value):
