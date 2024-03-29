@@ -4,6 +4,7 @@ from auto_painting_robot import AutoPaintingRobot
 import globals
 import tf2_geometry_msgs  # 用于坐标转换
 import tf2_ros
+from robot_state import RobotState,SprayingStateMachine
 
 # #步进电机一步滑台移动的距离
 # STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
@@ -176,6 +177,8 @@ class LinearModule(AutoPaintingRobot):
                 #self.close_spray_claw()
                 #更新状态量
                 AutoPaintingRobot.state_machine.update_state(7)
+                #更新状态量
+                AutoPaintingRobot.state = RobotState.NAVIGATING
 
         elif serial_data == "ERROR":
             # 错误处理逻辑

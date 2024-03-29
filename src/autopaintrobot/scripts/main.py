@@ -4,10 +4,11 @@ from track_vehicle import TrackVehicle
 from linear_module import LinearModule
 from robot_state import RobotState
 import globals
-
+from auto_painting_robot import AutoPaintingRobot
 # 主程序
 if __name__ == '__main__':
     # 创建履带车和直线模组的实例
+    autopaintrobot = AutoPaintingRobot()
     vehicle = TrackVehicle()
     linear_module = LinearModule(globals.step_distance, globals.STEP_Y, globals.speed, globals.mode)
     # 设置循环频率
@@ -19,19 +20,15 @@ if __name__ == '__main__':
 
         # 对于履带车和直线模组，#根据机器人的状态执行相应的操作
         # 主循环中的状态检查和相应的行动
-        if linear_module.state == RobotState.NAVIGATING:
+        if AutoPaintingRobot.state == RobotState.NAVIGATING:
             # 如果直线模组的状态是导航（NAVIGATING）状态，
             # 则调用 navigate_to_tree 方法，
             linear_module.navigate_to_tree()
 
-        elif vehicle.state == RobotState.SPRAYING:
+        elif AutoPaintingRobot.state == RobotState.SPRAYING:
             # 如果履带车的状态是喷涂（SPRAYING）状态，
             # 则调用 spray_tree 方法，
             vehicle.spray_tree()
-
-        elif linear_module.state == RobotState.SPRAYING:
-            # 如果直线模组的状态也是喷涂状态，
-            # 则调用其 spray_tree 方法，
             linear_module.spray_tree()
 
         else:
