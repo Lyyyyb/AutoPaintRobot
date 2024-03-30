@@ -16,14 +16,14 @@ if __name__ == '__main__':
     # 主循环
     while not rospy.is_shutdown():        
         # 发布TF变换
-        linear_module.publish_transforms()
+        autopaintrobot.publish_transforms()
 
         # 对于履带车和直线模组，#根据机器人的状态执行相应的操作
         # 主循环中的状态检查和相应的行动
         if AutoPaintingRobot.state == RobotState.NAVIGATING:
             # 如果直线模组的状态是导航（NAVIGATING）状态，
             # 则调用 navigate_to_tree 方法，
-            linear_module.navigate_to_tree()
+            autopaintrobot.navigate_to_tree()
 
         elif AutoPaintingRobot.state == RobotState.SPRAYING:
             # 如果履带车的状态是喷涂（SPRAYING）状态，
