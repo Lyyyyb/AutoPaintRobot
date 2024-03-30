@@ -136,6 +136,34 @@ class LinearModule(AutoPaintingRobot):
         close_command = "CLOSE_CLAW"
         self.send_serial_command(close_command)
 
+    def set_pump_duty_cycle(self, duty_cycle):
+        """
+        发送指令以设置水泵的占空比。
+
+        :param duty_cycle: 要设置的占空比，范围从0到100。
+        """
+        if 0 <= duty_cycle <= 100:
+            # 构造指令字符串，格式为 "pump <duty_cycle>"
+            command = f"pump {duty_cycle}"
+            self.send_serial_command(command)
+        else:
+            rospy.logerr("Invalid pump duty cycle: %d. Must be between 0 and 100.", duty_cycle)
+    
+    def wait_for_ok(self):
+        """
+        循环读取串口数据，直到接收到"OK"。
+        """
+        while True:
+            serial_data = self.read_serial_data()
+            if serial_data == "OK":
+                break  # 如果读取到"OK"，退出循环
+            elif serial_data == "ERROR":
+                rospy.logwarn("Error while waiting for OK. Received: %s", serial_data)
+                # 可以根据需求添加额外的错误处理逻辑
+                # 比如重新尝试发送命令，或者中断操作等
+
+
+
     # 实现具体的喷涂树木逻辑
     def spray_tree(self):
         serial_data = self.read_serial_data()
@@ -165,7 +193,32 @@ class LinearModule(AutoPaintingRobot):
                 #self.close_spray_claw()
                 # 创建并发送串口指令以控制机器人移动相应的步数
                 # 假设：我们将 X 和 Y 设为步数，速度和模式为预设值
+                # 设置水泵的占空比为50%。这通常用于启动水泵或设置其运行速度。
+                # 在PWM控制中，占空比决定了输出功率的多少。这里，50%的占空比可能意味着水泵运行在中等速度。
+                self.set_pump_duty_cycle(50)
+
+                # 发送一个控制命令，让机器沿着Y轴正方向移动特定的步数。
+                # self.STEP_Y是预定义的步数，表示机器应该移动的距离。
+                # 第一个参数0表示X轴的步数，这里设为0，说明X轴不移动。
                 self.send_movement_command(0, self.STEP_Y)
+
+                # 阻塞等待直到从机器接收到"OK"信号。
+                # 这通常是一个同步机制，确保机器已经完成上一个命令之后才继续执行后续操作。
+                self.wait_for_ok()
+
+                # 发送另一个控制命令，让机器沿着Y轴反方向移动相同的步数。
+                # 这通常用于将机器返回到起始位置或移至新的预定位置。
+                # 通过使用-self.STEP_Y，我们指定机器在Y轴上反向移动。
+                self.send_movement_command(0, -self.STEP_Y)
+
+                # 再次阻塞等待，直到从机器接收到"OK"信号。
+                # 这确保了机器已经完成反向移动命令。
+                self.wait_for_ok()
+
+                # 将水泵的占空比设置为0%，通常意味着停止水泵的运行。
+                # 在一些应用中，这可能用于停止流体的流动或确保机器在下一个步骤之前不再进行任何动作。
+                self.set_pump_duty_cycle(0)
+
                 #更新状态量
                 AutoPaintingRobot.state_machine.update_state(5)
 
