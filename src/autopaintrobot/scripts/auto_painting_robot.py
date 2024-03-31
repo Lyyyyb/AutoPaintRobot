@@ -35,7 +35,8 @@ class AutoPaintingRobot:
         #初始化雷达数据
         self.lidar_data = None
         #初始化串口
-        self.serial_port = None
+        self.serial_port = serial.Serial(port='COM3', baudrate=9600, timeout=1)
+
         # 直接在代码中设置TF变换的参数   
         # 设置TF变换的参数，分别代表模块框架和喷爪框架的位置和旋转
         self.module_transform = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # [tx, ty, tz, rx, ry, rz, rw]

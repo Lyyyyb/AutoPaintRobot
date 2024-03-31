@@ -1,6 +1,8 @@
 # 定义全局变量
 step_distance = 0.00001171875  # 步进电机一步滑台移动的距离，例如每步0.1米
 distance_threshold = 1.0  # 距离阈值，例如1米
+distance_threshold_forward = 1.0  # 距离阈值，例如1米
+distance_threshold_backward = 1.0  # 距离阈值，例如1米
 STEP_Y = 1  # 丝杠上下移动的步数
 mode = 1  # 运行模式
 speed = 1000  # 运行速度

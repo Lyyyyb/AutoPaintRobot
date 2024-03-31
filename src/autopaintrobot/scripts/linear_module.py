@@ -5,6 +5,7 @@ import globals
 import tf2_geometry_msgs  # 用于坐标转换
 import tf2_ros
 from robot_state import RobotState,SprayingStateMachine
+import time
 
 # #步进电机一步滑台移动的距离
 # STEP_DISTANCE = globals.get_step_distance()  # 例如，每步0.1米
@@ -149,11 +150,18 @@ class LinearModule(AutoPaintingRobot):
         else:
             rospy.logerr("Invalid pump duty cycle: %d. Must be between 0 and 100.", duty_cycle)
     
-    def wait_for_ok(self):
+
+    def wait_for_ok(self, timeout=10):
         """
-        循环读取串口数据，直到接收到"OK"。
+        循环读取串口数据，直到接收到"OK"或达到超时时间。
+        :param timeout: 超时时间（秒）
         """
+        start_time = time.time()
         while True:
+            if time.time() - start_time > timeout:
+                rospy.logwarn("Timeout while waiting for OK.")
+                break  # 超时退出循环
+
             serial_data = self.read_serial_data()
             if serial_data == "OK":
                 break  # 如果读取到"OK"，退出循环
@@ -161,6 +169,7 @@ class LinearModule(AutoPaintingRobot):
                 rospy.logwarn("Error while waiting for OK. Received: %s", serial_data)
                 # 可以根据需求添加额外的错误处理逻辑
                 # 比如重新尝试发送命令，或者中断操作等
+
 
 
 
