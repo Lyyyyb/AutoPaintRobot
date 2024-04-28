@@ -39,14 +39,24 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 
 
 int main(int argc, char **argv) {
+    // 使用ROS的初始化函数，argc和argv是从命令行传入的参数，"joy_to_cmd_vel_node"是节点的名字
     ros::init(argc, argv, "joy_to_cmd_vel_node");
+    
+    // 创建一个NodeHandle对象nh，它是操作ROS节点的主要接口
     ros::NodeHandle nh;
 
-    // Advertise the cmd_vel publisher
+    // 使用nh.advertise()创建一个发布者（Publisher），发布的话题名为"cmd_vel"，发布的消息类型为geometry_msgs::Twist，
+    // 并设置队列大小为10，以缓存待发送的消息
     cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
-    // Subscribe to the joy topic
+    // 使用nh.subscribe()创建一个订阅者（Subscriber），订阅的话题名为"joy"，消息处理函数为joyCallback，
+    // 设置队列大小为10，用于缓存未处理的消息
     ros::Subscriber joy_sub = nh.subscribe("joy", 10, joyCallback);
+    
+    // 调用ros::spin()启动事件处理循环。这个函数会持续运行，等待并调用用户定义的回调函数来处理接收到的数据，
+    // 直到节点被关闭为止
     ros::spin();
-	return 0;
+    
+    // 主函数正常结束，返回0表示成功执行
+    return 0;
 }
