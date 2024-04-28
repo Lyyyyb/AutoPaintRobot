@@ -1,19 +1,19 @@
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <can_msgs/Frame.h>
-#include <cmath>
+#include <ros/ros.h> // ROS相关头文件
+#include <geometry_msgs/Twist.h> // 机器人运动控制消息头文件
+#include <can_msgs/Frame.h> // CAN消息头文件
+#include <cmath> // 数学计算头文件
 
 // 常量定义
-const double WHEEL_DISTANCE = 0.5; // 轮间距离
-const int16_t MAX_SPEED_VALUE = 32767; // 最大速度值
-const uint8_t CAN_FRAME_DLC = 8; // CAN帧数据长度
+const double WHEEL_DISTANCE = 0.5; // 车轮之间的距离，单位为米
+const int16_t MAX_SPEED_VALUE = 32767; // 最大速度值，用于速度转换
+const uint8_t CAN_FRAME_DLC = 8; // CAN帧的数据长度码
 
 ros::Publisher can_pub; // CAN消息发布者
 
 // 定义一个联合体，用于int16_t和两个uint8_t之间的转换
 union SpeedData {
     int16_t speed; // 速度值
-    uint8_t bytes[2]; // 字节数组
+    uint8_t bytes[2]; // 两个字节的字节数组
 };
 
 // 发布CAN帧函数
@@ -40,9 +40,8 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     left_speed.speed = static_cast<int16_t>(v_l * MAX_SPEED_VALUE); // 将左轮速度转换为int16_t类型
     right_speed.speed = static_cast<int16_t>(v_r * MAX_SPEED_VALUE); // 将右轮速度转换为int16_t类型
 
-    // 左轮数据数组
+    // 构造左轮和右轮的CAN数据数组
     uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_speed.bytes[0], left_speed.bytes[1], 0x00, 0x00};
-    // 右轮数据数组
     uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_speed.bytes[0], right_speed.bytes[1], 0x00, 0x00};
 
     publishCanFrame(0x601, data_l); // 发布左轮CAN帧
@@ -51,8 +50,9 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
 // CAN消息回调函数
 void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
-    // 处理接收到的CAN消息
+    // 这里可以添加处理接收到的CAN消息的代码
 }
+
 
 
 int main(int argc, char **argv) {
