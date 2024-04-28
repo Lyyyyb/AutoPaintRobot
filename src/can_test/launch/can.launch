@@ -1,0 +1,16 @@
+<launch>
+    <!-- topic 转 CAN -->
+    <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
+        <param name="can_device" value="can0" />
+    </node>
+    <!-- CAN 转 topic -->
+    <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
+        <param name="can_device" value="can0" />
+    </node>
+    <!-- 示例节点 -->
+    <!-- <node  pkg="can_test" name="can_test_node" type="can_test" output="screen" /> -->
+    <node pkg="joy" type="joy_node" name="joy_node" output="screen" />
+    <!-- <node  pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel" output="screen" /> -->
+    <node  pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel_node" output="screen" />
+    <node  pkg="can_test" name="cmd_vel_to_can_node" type="cmd_vel_to_can_node" output="screen" />
+</launch>

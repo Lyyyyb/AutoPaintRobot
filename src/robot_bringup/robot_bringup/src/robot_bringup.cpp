@@ -25,7 +25,7 @@ namespace robot_bringup{//必须是包名
 /* 速度控制消息的回调函数 */
 void cmdCallback(const geometry_msgs::Twist& msg)
 {
-    RobotV_  = msg.linear.x*(-1)*speedparam_x; //msg.linear.x初始值是0.5//param is 1125
+    RobotV_  = msg.linear.x*speedparam_x; //msg.linear.x初始值是0.5//param is 1125
     RobotYawRate_ = msg.angular.z*speedparam_y;//param is 4650
     
     ROS_INFO("success to cmdCallback");

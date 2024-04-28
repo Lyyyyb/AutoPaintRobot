@@ -9,7 +9,9 @@ from auto_painting_robot import AutoPaintingRobot
 if __name__ == '__main__':
     # 创建履带车和直线模组的实例
     autopaintrobot = AutoPaintingRobot()
+    
     vehicle = TrackVehicle()
+    
     linear_module = LinearModule(globals.step_distance, globals.STEP_Y, globals.speed, globals.mode)
     # 设置循环频率
     rate = rospy.Rate(10)  # 10 Hz

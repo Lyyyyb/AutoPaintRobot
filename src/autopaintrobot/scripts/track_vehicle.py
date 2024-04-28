@@ -16,6 +16,7 @@ import tf.transformations
 
 # 履带车型机器人，继承自AutoPaintingRobot
 class TrackVehicle(AutoPaintingRobot):
+
     MAX_ITERATIONS = 100
     ROBOT_VELOCITY = 100  # 机器人速度
     STOP_FLAG_STOP = 0x02  # 停止标志
@@ -31,7 +32,7 @@ class TrackVehicle(AutoPaintingRobot):
         # self.distance_threshold = globals.distance_threshold
         self.distance_threshold_forward = globals.distance_threshold
         self.distance_threshold_backward = globals.distance_threshold
-
+        self.StopFlag = 0x00  # 初始化实例变量 StopFlag
         self.ROBOT_RADIUS = 0.1
 
         self.imu_kalman_filter = KalmanFilter(
@@ -82,7 +83,7 @@ class TrackVehicle(AutoPaintingRobot):
    
     def calculate_turn_angle(self, tree_position, current_orientation):
         # 假设current_orientation为机器人朝向的欧拉角
-        # 计算机器人当前朝向与树木之间的角度差
+        # 计算机器人当前朝向与树木之间的角度差 
         angle_to_tree = math.atan2(tree_position.y, tree_position.x)
         turn_angle = angle_to_tree - current_orientation.yaw
         return turn_angle 
@@ -115,7 +116,7 @@ class TrackVehicle(AutoPaintingRobot):
         
 
 
-    def create_serial_command(self, RobotV, YawRate, StopFlag):
+    def create_serial_command(self, RobotV, YawRate):
         header = 0xAA  # 指令的起始字节
         ender = 0x0D  # 指令的结束字节
         ROBOT_RADIUS = 0.10  # 机器人轮子的半径，单位是米
@@ -140,14 +141,14 @@ class TrackVehicle(AutoPaintingRobot):
         leftVelHigh, leftVelLow = (leftVel >> 8) & 0xFF, leftVel & 0xFF
 
         # 根据StopFlag调整命令
-        if StopFlag != 0x01:
-            StopFlag = 0x02  # 如果不是运行命令，则设置为停止
+        if self.StopFlag != 0x01:
+            self.StopFlag = 0x02  # 如果不是运行命令，则设置为停止
 
         # 计算校验和
-        checksum = (header + StopFlag + rightVelHigh + rightVelLow + leftVelHigh + leftVelLow) & 0xFF
+        checksum = (header + self.StopFlag + rightVelHigh + rightVelLow + leftVelHigh + leftVelLow) & 0xFF
 
         # 组装命令
-        command = bytes([header, StopFlag, rightVelHigh, rightVelLow, leftVelHigh, leftVelLow, checksum, ender])
+        command = bytes([header, self.StopFlag, rightVelHigh, rightVelLow, leftVelHigh, leftVelLow, checksum, ender])
 
         return command
 
@@ -160,7 +161,7 @@ class TrackVehicle(AutoPaintingRobot):
         except serial.SerialException as e:
             rospy.logerr("Track vehicle serial communication error: %s", e)
     
-    def send_movement_command(self, RobotV, YawRate, StopFlag):
+    def send_movement_command(self, RobotV, YawRate):
         
         # RobotV: 代表机器人的速度。这是一个数值，用于控制机器人前进或后退的速度。
         # YawRate: 代表机器人的偏航率。这是一个数值，用于控制机器人的转向。
@@ -168,7 +169,7 @@ class TrackVehicle(AutoPaintingRobot):
 
         # 调用 create_serial_command 方法来生成串口命令。
         # 这个方法接受机器人的速度、偏航率和停止标志作为输入，并返回相应的串口命令。
-        move_command = self.create_serial_command(RobotV, YawRate, StopFlag)
+        move_command = self.create_serial_command(RobotV, YawRate, self.StopFlag)
 
         # 调用 send_serial_command 方法发送生成的命令。
         # move_command 是由 create_serial_command 方法生成的串口命令。
@@ -202,18 +203,18 @@ class TrackVehicle(AutoPaintingRobot):
             # 根据移动方向和距离阈值判断是前进、后退还是停止
             if self.moving_forward_or_backward and movement_distance >= self.distance_threshold_forward:
                 RobotV = 100  # 设置前进速度
-                StopFlag = 0x01  # 运行状态
+                self.StopFlag = 0x01  # 运行状态
             elif not self.moving_forward_or_backward and movement_distance <= self.distance_threshold_backward:
                 RobotV = -100  # 设置后退速度
-                StopFlag = 0x01  # 运行状态
+                self.StopFlag = 0x01  # 运行状态
             else:
                 RobotV = 0  # 停止移动
-                StopFlag = 0x02  # 停止状态
+                self.StopFlag = 0x02  # 停止状态
 
             YawRate = 0  # 假设无需转向
 
             # 创建控制直线模组的串口指令并发送控制指令
-            command = self.create_serial_command(RobotV, YawRate, StopFlag)
+            command = self.create_serial_command(RobotV, YawRate)
             self.send_serial_command(command)
 
     def send_rpm_commands(self):
@@ -228,7 +229,7 @@ class TrackVehicle(AutoPaintingRobot):
     # 实现具体的喷涂树木逻辑
     def spray_tree(self):
         serial_data = self.read_serial_data()
-
+        # serial_data = "OK"
         if serial_data == "OK":
             if AutoPaintingRobot.state_machine.state == 1:
                 """
@@ -241,6 +242,7 @@ class TrackVehicle(AutoPaintingRobot):
                 # 初始化迭代计数器
                 max_iterations = 100  # 设定最大迭代次数
                 iteration_count = 0  # 当前迭代次数
+                YawRate = 1
                 while YawRate != 0 and iteration_count < max_iterations:
                     # 获取树的位置
                     tree_position = self.detect_tree_from_lidar(self.lidar_data)  # 假设lidar_data是已获取的数据
@@ -252,8 +254,8 @@ class TrackVehicle(AutoPaintingRobot):
                     turn_angle = self.calculate_turn_angle(tree_position, current_orientation)
                     #turn_angle = 0
                     # 确定机器人的速度和停止标志
-                    RobotV = 100  # 假设的速度值
-                    StopFlag = 0x01  # 假设的停止标志，0 表示不停止
+                    RobotV = 0  # 假设的速度值 只有旋转
+                    self.StopFlag = 0x01  # 假设的停止标志，0 表示不停止
 
                     # 计算YawRate（偏航率），假设与转动角度相关
                     YawRate = turn_angle * 0.1  # 这里的0.1是一个假设的比例因子，需要根据实际情况调整
@@ -261,20 +263,24 @@ class TrackVehicle(AutoPaintingRobot):
                     # 创建控制指令
                     # 发送控制指令
                     # 发送控制指令给下位机，这里的控制指令可能是为了移动机器人
-                    self.send_serial_command(RobotV, YawRate, StopFlag)
+                    # 创建控制直线模组的串口指令并发送控制指令
+                    command = self.create_serial_command(RobotV, YawRate)
+                    self.send_serial_command(command)
 
                     iteration_count += 1  # 更新迭代计数
                     # 检查偏航率(YawRate)是否为0，即机器人是否不需要转向
                     if YawRate == 0:
                         # 如果机器人不需要转向，则设置停止标志为0x02，表示停止
-                        StopFlag = 0x02
+                        self.StopFlag = 0x02
                         
                         # 将RobotV和YawRate都设置为0，这表示机器人应停止移动
                         RobotV = 0
                         YawRate = 0
                         
                         # 再次发送控制指令，这次是停止指令
-                        self.send_serial_command(RobotV, YawRate, StopFlag)
+                        # 创建控制直线模组的串口指令并发送控制指令
+                        command = self.create_serial_command(RobotV, YawRate)
+                        self.send_serial_command(command)
                         # 发送RPM读指令
                         self.send_rpm_commands()
                         break
@@ -301,10 +307,10 @@ class TrackVehicle(AutoPaintingRobot):
                 # 例如，根据某些条件决定是前进还是后退
                 self.moving_forward_or_backward = True  # 或 False，根据需要设置
                 
-                while StopFlag != 0x02 and iteration_count < max_iterations:
+                while self.StopFlag != 0x02 and iteration_count < max_iterations:
                     # 调用移动函数
                     self.move_towards_target(self.distance_threshold_forward)
-                    if(StopFlag == 0x02):
+                    if(self.StopFlag == 0x02):
                         self.send_rpm_commands()
                         break
 
@@ -326,13 +332,13 @@ class TrackVehicle(AutoPaintingRobot):
                 # 例如，根据某些条件决定是前进还是后退
                 self.moving_forward_or_backward = False  # 或 False，根据需要设置
 
-                while StopFlag != 0x02 and iteration_count < max_iterations:
+                while self.StopFlag != 0x02 and iteration_count < max_iterations:
 
                     # 调用移动函数
                     self.move_towards_target(self.distance_threshold_backward)
                     iteration_count += 1
 
-                    if(StopFlag == 0x02):
+                    if(self.StopFlag == 0x02):
                         self.send_rpm_commands()
                         break
 

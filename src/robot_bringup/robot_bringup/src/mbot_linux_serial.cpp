@@ -32,11 +32,17 @@ struct Control_Way
 } VelWay;
 
 //发送左右轮速控制速度共用体,传感器的X，Z，Angle，用于数据转化
-union sendData
+union sendData1
 {
-    short d;//short是短整形、两字节，16位
-    unsigned char data[2];//data[2]储存两个十六进制数，共16位。//所以两者可以转化
-} leftVelSet, rightVelSet;
+    short l;//short是短整形、两字节，16位
+    unsigned char data1[2];//data[2]储存两个十六进制数，共16位。//所以两者可以转化
+} leftVelSet;
+
+union sendData2
+{
+    short r;//short是短整形、两字节，16位
+    unsigned char data2[2];//data[2]储存两个十六进制数，共16位。//所以两者可以转化
+} rightVelSet;
 
 const double ROBOT_LENGTH = 0.85; // 两轮之间距离m
 const double ROBOT_RADIUS = 0.10;  //  轮子半径m
@@ -79,30 +85,49 @@ void writeSpeed(double RobotV, double YawRate, unsigned char StopFlag)
     //计算左右轮期望速度
     if (RobotV == 0 && YawRate != 0) //旋转
     {
-        leftVelSet.d = (short)(YawRate * ROBOT_RADIUS);//基础占空比是80
-        rightVelSet.d = (short)(-YawRate * ROBOT_RADIUS);
+        leftVelSet.l = (short)(YawRate * ROBOT_RADIUS);//基础占空比是80
+        rightVelSet.r = (short)(-YawRate * ROBOT_RADIUS);
     }
     
     if (RobotV != 0 && YawRate == 0) //直线
     {
-        leftVelSet.d = (short)(RobotV); //下位机驱动器采用的是占空比调速
-        rightVelSet.d = (short)(RobotV);//基础占空比是100
+        leftVelSet.l = (short)(-RobotV); //下位机驱动器采用的是占空比调速
+        rightVelSet.r = (short)(-RobotV);//基础占空比是100
+    }
+//既有线速度，又有角速度
+    if (RobotV > 0 && YawRate < 0)//右转
+    {
+        leftVelSet.l = (short)((-1)*(RobotV-YawRate * 0.1));//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)+1.2));//简化运算后，将角速度转化成线速度取其一半为加权值
+        rightVelSet.r = (short)((-1)*(RobotV+YawRate * 0.12));
+    }
+    if (RobotV > 0 && YawRate > 0)//左转
+    {
+        leftVelSet.l = (short)((-1)*(RobotV-YawRate * 0.09));//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)+1.2));//简化运算后，将角速度转化成线速度取其一半为加权值
+        rightVelSet.r = (short)((-1)*(RobotV+YawRate * 0.09));//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)-1.2));// (short)(RobotV-YawRate * ROBOT_RADIUS/2);
     }
 
-    if (RobotV != 0 && YawRate != 0)//既有线速度，又有角速度
+    
+
+    if (RobotV < 0 && YawRate > 0)//左倒转
     {
-        leftVelSet.d = (short)(RobotV+YawRate * ROBOT_RADIUS/2);//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)+1.2));//简化运算后，将角速度转化成线速度取其一半为加权值
-        rightVelSet.d = (short)(RobotV-YawRate * ROBOT_RADIUS/2);//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)-1.2));// (short)(RobotV-YawRate * ROBOT_RADIUS/2);
+        leftVelSet.l = (short)((-1)*(RobotV+YawRate * 0.075));//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)+1.2));//简化运算后，将角速度转化成线速度取其一半为加权值
+        rightVelSet.r  = (short)((-1)*(RobotV-YawRate * 0.05));
+    }
+
+    if (RobotV < 0 && YawRate < 0)//右倒转
+    {
+        leftVelSet.l = (short)((-1)*(RobotV+YawRate * 0.075));//(short)( YawRate/30 * ((YawRate*1125)/(-RobotV*4655)+1.2));//简化运算后，将角速度转化成线速度取其一半为加权值
+        rightVelSet.r = (short)((-1)*(RobotV-YawRate * 0.05));
     }
 
     if (RobotV == 0 && YawRate == 0)
     {
-        leftVelSet.d = (short)(RobotV+YawRate);//无用的计算，结果是0
-        rightVelSet.d = (short)(RobotV+YawRate);//无用的计算，结果是0
+        leftVelSet.l = (short)(RobotV+YawRate);//无用的计算，结果是0
+        rightVelSet.r = (short)(RobotV+YawRate);//无用的计算，结果是0
     }
   
-    ROS_INFO("leftV: %d", leftVelSet.d);
-    ROS_INFO("rightV: %d", rightVelSet.d);
+    ROS_INFO("leftV: %d rightV: %d", leftVelSet.l,rightVelSet.r);
+    
     buf[0] = header;
     
     buf[1] = StopFlag;
@@ -112,9 +137,10 @@ void writeSpeed(double RobotV, double YawRate, unsigned char StopFlag)
     {
             for (i = 0; i < 2; i++)
        {
-            buf[i + 2] = rightVelSet.data[1 - i]; // buf[2] buf[3]
-            buf[i + 4] = leftVelSet.data[1 - i];  // buf[4] buf[5]
+            buf[i + 2] = rightVelSet.data2[1 - i]; // buf[2] buf[3]
+            buf[i + 4] = leftVelSet.data1[1 - i];  // buf[4] buf[5]
        }
+       
     }
     else
     {

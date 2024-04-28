@@ -1,0 +1,8 @@
+topic_to_socket_node:
+  can_device: "can0"
+
+socket_to_topic_node:
+  can_device: "can0"
+
+can_test:
+  # 如果有额外的参数需要设置，可以在这里添加

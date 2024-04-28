@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/tyt/catkin_ws1/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/tyt/catkin_ws2/devel/include/**",
+        "/home/tyt/cartographer_ws/install_isolated/include/**",
+        "/home/tyt/catkin_ws2/src/ros_astra_camera/include/**",
+        "/home/tyt/catkin_ws1/src/fsan/include/**",
+        "/home/tyt/catkin_ws1/src/lakibeam1_ros_v1_0_0/include/**",
+        "/home/tyt/exper_base/src/marker_usage/include/**",
+        "/home/tyt/catkin_ws2/src/orbbec_camera/include/**",
+        "/home/tyt/catkin_ws_carto/src/red_recognize/include/**",
+        "/home/tyt/catkin_ws1/src/robot_bringup/include/**",
+        "/home/tyt/exper_base/src/send_goal_onegoal/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

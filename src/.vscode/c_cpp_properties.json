@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/lyb/AutoPaintRobot/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/lyb/catkin_ws/devel/include/**",
+        "/home/lyb/catkin_ws/src/atr_pkg/include/**",
+        "/home/lyb/catkin_ws/src/autopaintingrobot/include/**",
+        "/home/lyb/AutoPaintRobot/src/autopaintrobot/include/**",
+        "/home/lyb/catkin_ws/src/imu_pkg/include/**",
+        "/home/lyb/AutoPaintRobot/src/joy_control/include/**",
+        "/home/lyb/catkin_ws/src/lidar_pkg/include/**",
+        "/home/lyb/catkin_ws/src/qq_msgs/include/**",
+        "/home/lyb/AutoPaintRobot/src/robot_bringup/include/**",
+        "/home/lyb/catkin_ws/src/ssr_pkg/include/**",
+        "/home/lyb/catkin_ws/src/vel_pkg/include/**",
+        "/home/lyb/catkin_ws/src/wpr_simulation/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
