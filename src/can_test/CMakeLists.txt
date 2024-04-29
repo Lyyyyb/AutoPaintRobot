@@ -135,7 +135,6 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/can_test_node.cpp)
 add_executable(can_test src/can_test.cpp)
-add_executable(joy_to_cmd_vel src/joy_to_cmd_vel.cpp)
 add_executable(joy_to_cmd_vel_node src/joy_to_cmd_vel_node.cpp)
 add_executable(cmd_vel_to_can_node src/cmd_vel_to_can_node.cpp)
 ## Rename C++ executable without prefix
@@ -153,9 +152,6 @@ add_executable(cmd_vel_to_can_node src/cmd_vel_to_can_node.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(can_test
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(joy_to_cmd_vel
   ${catkin_LIBRARIES}
 )
 target_link_libraries(joy_to_cmd_vel_node

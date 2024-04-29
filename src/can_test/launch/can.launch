@@ -3,14 +3,29 @@
     <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
         <param name="can_device" value="can0" />
     </node>
+    
     <!-- CAN 转 topic -->
     <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
         <param name="can_device" value="can0" />
     </node>
-    <!-- 示例节点 -->
-    <!-- <node  pkg="can_test" name="can_test_node" type="can_test" output="screen" /> -->
+    
+    <!-- 操纵杆输入节点 -->
     <node pkg="joy" type="joy_node" name="joy_node" output="screen" />
-    <!-- <node  pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel" output="screen" /> -->
-    <node  pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel_node" output="screen" />
-    <node  pkg="can_test" name="cmd_vel_to_can_node" type="cmd_vel_to_can_node" output="screen" />
+
+    <!-- 将操纵杆输入转换为 cmd_vel 指令 -->
+    <node pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel_node" output="screen">
+        <param name="max_linear_speed" value="1.0" />
+        <param name="min_speed_threshold" value="0.1" />
+        <param name="wheel_distance" value="0.5" />
+    </node>
+
+    <!-- 将 cmd_vel 指令转换为 CAN 消息 -->
+    <node pkg="can_test" name="cmd_vel_to_can_node" type="cmd_vel_to_can_node" output="screen">
+        <param name="wheel_distance" value="0.5" />
+        <param name="max_speed_value" value="32767" />
+        <param name="can_frame_dlc" value="8" />
+        <param name="can_id_left_wheel" value="0x601" />
+        <param name="can_id_right_wheel" value="0x602" />
+        <param name="loop_rate" value="10" />
+    </node>
 </launch>

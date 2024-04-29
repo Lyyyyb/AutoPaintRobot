@@ -38,27 +38,20 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 }
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "joy_to_cmd_vel_node"); // 初始化ROS节点
-    ros::NodeHandle nh; // 创建节点句柄
-    // 获取参数值
-    nh.getParam("max_linear_speed", MAX_LINEAR_SPEED);
-    nh.getParam("min_speed_threshold", MIN_SPEED_THRESHOLD);
-    nh.getParam("wheel_distance", WHEEL_DISTANCE);
+    ros::init(argc, argv, "joy_to_cmd_vel_node");
+    ros::NodeHandle nh;
 
-
-    // 参数检查，确保必要的参数已经设置
-    if (!nh.hasParam("max_linear_speed") || !nh.hasParam("min_speed_threshold") || !nh.hasParam("wheel_distance")) {
-        ROS_ERROR("Failed to get parameters"); // 参数获取失败的错误信息
-        return -1; // 返回-1，表示程序异常退出
+    if (!nh.getParam("/joy_to_cmd_vel_node/max_linear_speed", MAX_LINEAR_SPEED) ||
+        !nh.getParam("/joy_to_cmd_vel_node/min_speed_threshold", MIN_SPEED_THRESHOLD) ||
+        !nh.getParam("/joy_to_cmd_vel_node/wheel_distance", WHEEL_DISTANCE)) {
+        ROS_ERROR("Failed to get all required parameters.");
+        return -1;
     }
 
 
+    cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    ros::Subscriber joy_sub = nh.subscribe("joy", 10, joyCallback);
 
-    cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10); // 创建一个发布者，用于发布速度控制指令
-
-    ros::Subscriber joy_sub = nh.subscribe("joy", 10, joyCallback); // 订阅手柄控制的消息，设置回调函数
-
-    ros::spin(); // 进入ROS消息处理循环，等待回调函数的触发
-
-    return 0; // 程序正常退出
+    ros::spin();
+    return 0;
 }
