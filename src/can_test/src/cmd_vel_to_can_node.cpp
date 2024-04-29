@@ -16,6 +16,10 @@ union SpeedData {
     uint8_t bytes[2]; // 两个字节的字节数组
 };
 
+// 上一次发送的速度值，用于避免重复发送相同的速度值
+int16_t last_left_speed = 0;
+int16_t last_right_speed = 0;
+
 // 发布CAN帧函数
 void publishCanFrame(uint32_t id, uint8_t data[]) {
     can_msgs::Frame frame; // 创建CAN帧对象
@@ -40,6 +44,15 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     left_speed.speed = static_cast<int16_t>(v_l * MAX_SPEED_VALUE); // 将左轮速度转换为int16_t类型
     right_speed.speed = static_cast<int16_t>(v_r * MAX_SPEED_VALUE); // 将右轮速度转换为int16_t类型
 
+    // 如果左右轮速度没有变化，则不发送CAN帧
+    if (left_speed.speed == last_left_speed && right_speed.speed == last_right_speed) {
+        return;
+    }
+
+    // 更新上一次发送的速度值
+    last_left_speed = left_speed.speed;
+    last_right_speed = right_speed.speed;
+
     // 构造左轮和右轮的CAN数据数组
     uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_speed.bytes[0], left_speed.bytes[1], 0x00, 0x00};
     uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_speed.bytes[0], right_speed.bytes[1], 0x00, 0x00};
@@ -53,8 +66,6 @@ void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
     // 这里可以添加处理接收到的CAN消息的代码
 }
 
-
-
 int main(int argc, char **argv) {
     // 使用ROS的初始化函数来初始化节点，argc和argv分别代表命令行参数的数量和具体参数内容，"cmd_vel_to_can_node"是该节点的名称
     ros::init(argc, argv, "cmd_vel_to_can_node");
@@ -65,7 +76,7 @@ int main(int argc, char **argv) {
     // 使用nh.advertise()方法创建一个发布者（Publisher），用于发布CAN总线消息。
     // 消息类型为can_msgs::Frame，发布的主题名为"sent_messages"，队列大小设为100，以缓冲待发送的消息
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
-    
+
     // 使用nh.subscribe()方法创建一个订阅者（Subscriber），订阅主题"cmd_vel"上的消息，
     // 当有新消息时，会调用cmdVelCallback回调函数进行处理，队列大小同样为10，用于暂存未处理的消息
     ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 10, cmdVelCallback);
@@ -74,10 +85,18 @@ int main(int argc, char **argv) {
     // 当接收到新消息时，调用canCallBack回调函数处理这些消息，队列大小为100
     ros::Subscriber sub = nh.subscribe("/received_messages", 100, canCallBack);
 
-    // 调用ros::spin()函数，这是ROS节点的主循环。此函数会持续运行，等待并调用相应的回调函数来处理所有已订阅话题上接收到的消息，
-    // 直到节点被显式关闭
-    ros::spin();
-    
-    // 当程序执行到这里时，意味着ROS节点即将退出，main函数返回0，表示程序成功执行完毕
+    // 控制消息发布频率为10Hz
+    ros::Rate rate(10);
+
+    // 循环等待ROS节点终止
+    while (ros::ok()) {
+        ros::spinOnce(); // 处理回调函数
+        rate.sleep(); // 控制发布频率
+    }
+
+    // 关闭ROS节点
+    ros::shutdown();
+
+    // 返回0表示程序成功执行完毕
     return 0;
 }
