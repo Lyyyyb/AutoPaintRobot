@@ -3,10 +3,13 @@
 #include <can_msgs/Frame.h> // CAN总线消息头文件
 #include <cmath> // 导入数学计算相关头文件
 
-// 定义常量
-const double WHEEL_DISTANCE = 0.5; // 轮距，单位为米
-const int16_t MAX_SPEED_VALUE = 32767; // 最大速度值，用于速度的数值转换
-const uint8_t CAN_FRAME_DLC = 8; // CAN帧的数据长度
+// 变量声明
+double wheel_distance; // 轮距，单位为米
+int max_speed_value; // 最大速度值，用于速度的数值转换
+int can_frame_dlc; // CAN帧的数据长度
+int can_id_left_wheel; // 左轮CAN ID
+int can_id_right_wheel; // 右轮CAN ID
+int loop_rate; // 循环频率
 
 ros::Publisher can_pub; // 定义一个发布者，用于发送CAN消息
 
@@ -21,28 +24,34 @@ int16_t last_left_speed = 0;
 int16_t last_right_speed = 0;
 
 // 定义发布CAN帧的函数
-void publishCanFrame(uint32_t id, uint8_t data[]) {
+void publishCanFrame(int id, uint8_t data[]) {
     can_msgs::Frame frame; // 创建一个CAN帧对象
     frame.id = id; // 设置帧的ID
-    frame.dlc = CAN_FRAME_DLC; // 设置数据长度
-    for (int i = 0; i < CAN_FRAME_DLC; ++i) {
+    frame.dlc = can_frame_dlc; // 设置数据长度
+    for (int i = 0; i < can_frame_dlc; ++i) {
         frame.data[i] = data[i]; // 填充数据到帧中
     }
-    can_pub.publish(frame); // 发布CAN帧
+    // 发布CAN帧前检查是否有订阅者
+    if (can_pub.getNumSubscribers() == 0) {
+        ROS_WARN("No subscribers present for the topic.");
+    } else {
+        can_pub.publish(frame);
+    }
 }
 
 // 处理cmd_vel话题消息的回调函数
 void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     double v = msg->linear.x; // 读取线速度
     double omega = msg->angular.z; // 读取角速度
-    double v_l = v - omega * WHEEL_DISTANCE / 2; // 计算左轮速度
-    double v_r = v + omega * WHEEL_DISTANCE / 2; // 计算右轮速度
+    double v_l = v - omega * wheel_distance / 2; // 计算左轮速度
+    double v_r = v + omega * wheel_distance / 2; // 计算右轮速度
 
     SpeedData left_speed; // 左轮速度数据
     SpeedData right_speed; // 右轮速度数据
 
-    left_speed.speed = static_cast<int16_t>(v_l * MAX_SPEED_VALUE); // 将左轮速度转换为int16_t类型
-    right_speed.speed = static_cast<int16_t>(v_r * MAX_SPEED_VALUE); // 将右轮速度转换为int16_t类型
+    // 速度缩放并转换为int16_t类型，同时处理溢出
+    left_speed.speed = std::max(std::min(static_cast<int>(v_l * max_speed_value), 32767), -32768);
+    right_speed.speed = std::max(std::min(static_cast<int>(v_r * max_speed_value), 32767), -32768);
 
     // 如果左右轮速度没有变化，则不发送CAN帧
     if (left_speed.speed == last_left_speed && right_speed.speed == last_right_speed) {
@@ -57,9 +66,10 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_speed.bytes[0], left_speed.bytes[1], 0x00, 0x00};
     uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_speed.bytes[0], right_speed.bytes[1], 0x00, 0x00};
 
-    publishCanFrame(0x601, data_l); // 发布左轮CAN帧
-    publishCanFrame(0x602, data_r); // 发布右轮CAN帧
+    publishCanFrame(can_id_left_wheel, data_l); // 发布左轮CAN帧
+    publishCanFrame(can_id_right_wheel, data_r); // 发布右轮CAN帧
 }
+
 
 // CAN消息回调函数
 void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
@@ -67,33 +77,27 @@ void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
 }
 
 int main(int argc, char **argv) {
-    // 初始化ROS节点
     ros::init(argc, argv, "cmd_vel_to_can_node");
-
-    // 创建NodeHandle对象，允许节点与ROS系统通信
     ros::NodeHandle nh;
 
-    // 创建一个发布者对象，用于发送CAN消息
+    // 获取参数
+    nh.param("wheel_distance", wheel_distance, 0.5);
+    nh.param("max_speed_value", max_speed_value, 32767);
+    nh.param("can_frame_dlc", can_frame_dlc, 8);
+    nh.param("can_id_left_wheel", can_id_left_wheel, 0x601);
+    nh.param("can_id_right_wheel", can_id_right_wheel, 0x602);
+    nh.param("loop_rate", loop_rate, 10);
+
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
-
-    // 创建一个订阅者对象，用于接收cmd_vel消息，并指定回调函数
     ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 10, cmdVelCallback);
-
-    // 创建另一个订阅者对象，用于接收CAN消息
     ros::Subscriber sub = nh.subscribe("/received_messages", 100, canCallBack);
 
-    // 设置循环频率
-    ros::Rate rate(10);
-
-    // ROS节点循环，等待消息或事件
+    ros::Rate rate(loop_rate);
     while (ros::ok()) {
-        ros::spinOnce(); // 处理一次回调函数
-        rate.sleep(); // 控制循环的时间间隔
+        ros::spinOnce();
+        rate.sleep();
     }
 
-    // 关闭ROS节点
     ros::shutdown();
-
-    // 程序结束
     return 0;
 }
