@@ -1,40 +1,40 @@
-#include <ros/ros.h> // ROS相关头文件
+#include <ros/ros.h> // 导入ROS相关的头文件
 #include <geometry_msgs/Twist.h> // 机器人运动控制消息头文件
-#include <can_msgs/Frame.h> // CAN消息头文件
-#include <cmath> // 数学计算头文件
+#include <can_msgs/Frame.h> // CAN总线消息头文件
+#include <cmath> // 导入数学计算相关头文件
 
-// 常量定义
-const double WHEEL_DISTANCE = 0.5; // 车轮之间的距离，单位为米
-const int16_t MAX_SPEED_VALUE = 32767; // 最大速度值，用于速度转换
-const uint8_t CAN_FRAME_DLC = 8; // CAN帧的数据长度码
+// 定义常量
+const double WHEEL_DISTANCE = 0.5; // 轮距，单位为米
+const int16_t MAX_SPEED_VALUE = 32767; // 最大速度值，用于速度的数值转换
+const uint8_t CAN_FRAME_DLC = 8; // CAN帧的数据长度
 
-ros::Publisher can_pub; // CAN消息发布者
+ros::Publisher can_pub; // 定义一个发布者，用于发送CAN消息
 
-// 定义一个联合体，用于int16_t和两个uint8_t之间的转换
+// 定义一个联合体，用于int16_t和两个uint8_t之间的数据转换
 union SpeedData {
-    int16_t speed; // 速度值
-    uint8_t bytes[2]; // 两个字节的字节数组
+    int16_t speed; // 存储速度值
+    uint8_t bytes[2]; // 存储速度值的字节形式
 };
 
-// 上一次发送的速度值，用于避免重复发送相同的速度值
+// 存储上一次发送的速度值，避免重复发送相同的速度
 int16_t last_left_speed = 0;
 int16_t last_right_speed = 0;
 
-// 发布CAN帧函数
+// 定义发布CAN帧的函数
 void publishCanFrame(uint32_t id, uint8_t data[]) {
-    can_msgs::Frame frame; // 创建CAN帧对象
-    frame.id = id; // 设置帧ID
-    frame.dlc = CAN_FRAME_DLC; // 设置数据长度码
+    can_msgs::Frame frame; // 创建一个CAN帧对象
+    frame.id = id; // 设置帧的ID
+    frame.dlc = CAN_FRAME_DLC; // 设置数据长度
     for (int i = 0; i < CAN_FRAME_DLC; ++i) {
-        frame.data[i] = data[i]; // 填充数据
+        frame.data[i] = data[i]; // 填充数据到帧中
     }
     can_pub.publish(frame); // 发布CAN帧
 }
 
-// cmd_vel话题回调函数
+// 处理cmd_vel话题消息的回调函数
 void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
-    double v = msg->linear.x; // 获取线速度
-    double omega = msg->angular.z; // 获取角速度
+    double v = msg->linear.x; // 读取线速度
+    double omega = msg->angular.z; // 读取角速度
     double v_l = v - omega * WHEEL_DISTANCE / 2; // 计算左轮速度
     double v_r = v + omega * WHEEL_DISTANCE / 2; // 计算右轮速度
 
@@ -67,36 +67,33 @@ void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
 }
 
 int main(int argc, char **argv) {
-    // 使用ROS的初始化函数来初始化节点，argc和argv分别代表命令行参数的数量和具体参数内容，"cmd_vel_to_can_node"是该节点的名称
+    // 初始化ROS节点
     ros::init(argc, argv, "cmd_vel_to_can_node");
-    
-    // 创建一个NodeHandle对象nh，它允许节点与其他ROS节点通信、发布或订阅话题等
+
+    // 创建NodeHandle对象，允许节点与ROS系统通信
     ros::NodeHandle nh;
 
-    // 使用nh.advertise()方法创建一个发布者（Publisher），用于发布CAN总线消息。
-    // 消息类型为can_msgs::Frame，发布的主题名为"sent_messages"，队列大小设为100，以缓冲待发送的消息
+    // 创建一个发布者对象，用于发送CAN消息
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
 
-    // 使用nh.subscribe()方法创建一个订阅者（Subscriber），订阅主题"cmd_vel"上的消息，
-    // 当有新消息时，会调用cmdVelCallback回调函数进行处理，队列大小同样为10，用于暂存未处理的消息
+    // 创建一个订阅者对象，用于接收cmd_vel消息，并指定回调函数
     ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 10, cmdVelCallback);
 
-    // 再创建一个订阅者，用于监听CAN总线接收到的消息，主题为"/received_messages"，
-    // 当接收到新消息时，调用canCallBack回调函数处理这些消息，队列大小为100
+    // 创建另一个订阅者对象，用于接收CAN消息
     ros::Subscriber sub = nh.subscribe("/received_messages", 100, canCallBack);
 
-    // 控制消息发布频率为10Hz
+    // 设置循环频率
     ros::Rate rate(10);
 
-    // 循环等待ROS节点终止
+    // ROS节点循环，等待消息或事件
     while (ros::ok()) {
-        ros::spinOnce(); // 处理回调函数
-        rate.sleep(); // 控制发布频率
+        ros::spinOnce(); // 处理一次回调函数
+        rate.sleep(); // 控制循环的时间间隔
     }
 
     // 关闭ROS节点
     ros::shutdown();
 
-    // 返回0表示程序成功执行完毕
+    // 程序结束
     return 0;
 }
