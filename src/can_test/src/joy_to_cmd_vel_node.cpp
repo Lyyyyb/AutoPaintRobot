@@ -40,6 +40,11 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 int main(int argc, char **argv) {
     ros::init(argc, argv, "joy_to_cmd_vel_node"); // 初始化ROS节点
     ros::NodeHandle nh; // 创建节点句柄
+    // 获取参数值
+    nh.getParam("max_linear_speed", MAX_LINEAR_SPEED);
+    nh.getParam("min_speed_threshold", MIN_SPEED_THRESHOLD);
+    nh.getParam("wheel_distance", WHEEL_DISTANCE);
+
 
     // 参数检查，确保必要的参数已经设置
     if (!nh.hasParam("max_linear_speed") || !nh.hasParam("min_speed_threshold") || !nh.hasParam("wheel_distance")) {
@@ -47,10 +52,7 @@ int main(int argc, char **argv) {
         return -1; // 返回-1，表示程序异常退出
     }
 
-    // 获取参数值
-    nh.getParam("max_linear_speed", MAX_LINEAR_SPEED);
-    nh.getParam("min_speed_threshold", MIN_SPEED_THRESHOLD);
-    nh.getParam("wheel_distance", WHEEL_DISTANCE);
+
 
     cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10); // 创建一个发布者，用于发布速度控制指令
 

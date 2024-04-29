@@ -24,21 +24,17 @@ int16_t last_left_speed = 0;
 int16_t last_right_speed = 0;
 
 // 定义发布CAN帧的函数
+// 修改can发布检查
 void publishCanFrame(int id, uint8_t data[]) {
-    can_msgs::Frame frame; // 创建一个CAN帧对象
-    frame.id = id; // 设置帧的ID
-    frame.dlc = can_frame_dlc; // 设置数据长度
+    can_msgs::Frame frame;
+    frame.id = id;
+    frame.dlc = can_frame_dlc;
     for (int i = 0; i < can_frame_dlc; ++i) {
-        frame.data[i] = data[i]; // 填充数据到帧中
+        frame.data[i] = data[i];
     }
-    // 发布CAN帧前检查是否有订阅者
-    if (can_pub.getNumSubscribers() == 0) {
-        ROS_WARN("No subscribers present for the topic.");
-    } else {
-        can_pub.publish(frame);
-    }
+    // 直接发布，不进行订阅者检查
+    can_pub.publish(frame);
 }
-
 // 处理cmd_vel话题消息的回调函数
 void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     double v = msg->linear.x; // 读取线速度
@@ -89,7 +85,7 @@ int main(int argc, char **argv) {
     nh.param("loop_rate", loop_rate, 10);
 
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
-    ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 10, cmdVelCallback);
+    ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 100, cmdVelCallback);
     ros::Subscriber sub = nh.subscribe("/received_messages", 100, canCallBack);
 
     ros::Rate rate(loop_rate);
