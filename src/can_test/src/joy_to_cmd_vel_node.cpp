@@ -63,13 +63,9 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "joy_to_cmd_vel_node");
     ros::NodeHandle nh;
 
-    if (!nh.getParam("/joy_to_cmd_vel_node/max_linear_speed", MAX_LINEAR_SPEED) ||
-        !nh.getParam("/joy_to_cmd_vel_node/min_speed_threshold", MIN_SPEED_THRESHOLD) ||
-        !nh.getParam("/joy_to_cmd_vel_node/wheel_distance", WHEEL_DISTANCE)) {
-        ROS_ERROR("Failed to get all required parameters.");
-        return -1;
-    }
-
+    nh.param("/joy_to_cmd_vel_node/max_linear_speed", MAX_LINEAR_SPEED, 1.0);
+    nh.param("/joy_to_cmd_vel_node/min_speed_threshold", MIN_SPEED_THRESHOLD, 0.1);
+    nh.param("/joy_to_cmd_vel_node/wheel_distance", WHEEL_DISTANCE, 0.8);
 
     cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     ros::Subscriber joy_sub = nh.subscribe("joy", 10, joyCallback);
