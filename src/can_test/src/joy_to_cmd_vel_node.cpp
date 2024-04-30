@@ -40,28 +40,30 @@ ros::Publisher cmd_vel_pub; // 定义一个发布者，用来发送速度控制�
 
 // 手柄控制消息的回调函数
 void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
-    // 使用开方非线性调整线速度的缩放因子
+    // 使用非线性调整因子，平滑线速度和角速度的输入
     double linear_scale = std::pow(fabs(msg->axes[1]), 0.5);
     double angular_scale = std::pow(fabs(msg->axes[3]), 0.5);
 
-    // 应用缩放因子并乘以最大速度和轮距调整
+    // 应用缩放因子并乘以最大速度，独立控制线速度和角速度
     double linear_vel = msg->axes[1] * linear_scale * MAX_LINEAR_SPEED;
-    double angular_vel = msg->axes[3] * angular_scale * WHEEL_DISTANCE;
+    double angular_vel = msg->axes[3] * angular_scale * (WHEEL_DISTANCE / 2); // 通过减小轮距因子来降低角速度的敏感度
 
     geometry_msgs::Twist cmd_vel; // 创建Twist消息，用于发送速度指令
 
-    // 如果速度超过阈值，则发送调整后的速度
-    if (fabs(linear_vel) > MIN_SPEED_THRESHOLD || fabs(angular_vel) > MIN_SPEED_THRESHOLD) {
-        cmd_vel.linear.x = linear_vel;
-        // 角速度调整策略：考虑线速度，调整转动半径
-        cmd_vel.angular.z = angular_vel / (1 + fabs(linear_vel)); // 随着线速度的增加，减少角速度以保持控制的平稳
-    } else {
-        cmd_vel.linear.x = 0;
-        cmd_vel.angular.z = 0;
-    }
+    // 角速度控制的动态调整，确保在较高线速度时减小角速度
+    double dynamic_angular_limit = WHEEL_DISTANCE / (1 + 2 * fabs(linear_vel)); // 增加线速度依赖性，提高稳定性
+
+    // 应用安全限制，防止速度过高
+    cmd_vel.linear.x = std::min(linear_vel, MAX_LINEAR_SPEED);
+    cmd_vel.angular.z = std::min(angular_vel, dynamic_angular_limit);
+
+    // 避免微小的速度值引起不必要的移动
+    if (fabs(cmd_vel.linear.x) < MIN_SPEED_THRESHOLD) cmd_vel.linear.x = 0;
+    if (fabs(cmd_vel.angular.z) < MIN_SPEED_THRESHOLD) cmd_vel.angular.z = 0;
 
     cmd_vel_pub.publish(cmd_vel); // 发布速度控制指令
 }
+
 
 
 int main(int argc, char **argv) {
