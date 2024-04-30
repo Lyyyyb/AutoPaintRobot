@@ -76,60 +76,58 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
 // 初始化电机函数
 void initMotors(ros::Publisher& pub) {
     uint8_t init_motor_data[] = {0x2f, 0x00, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00};
-    int max_attempts = 10; 
+    int max_attempts = 10;
     int attempts = 0;
 
     while (!(left_motor_initialized && right_motor_initialized) && attempts < max_attempts) {
-        try {
-            publishCanFrame(0x601, init_motor_data, pub);
-            publishCanFrame(0x602, init_motor_data, pub);
-            ros::Duration(0.5).sleep();  
-            attempts++;
-            ROS_INFO("Attempt %d to initialize motors", attempts);
-        } catch (const std::exception& e) {
-            ROS_ERROR("Exception caught during motor initialization: %s", e.what());
-            ros::Duration(1.0).sleep(); // Wait before retrying
+        publishCanFrame(0x601, init_motor_data, pub);
+        publishCanFrame(0x602, init_motor_data, pub);
+        ros::spinOnce(); // 确保处理CAN帧的回调函数
+        ros::Duration(0.5).sleep();
+        attempts++;
+        ROS_INFO("Attempt %d to initialize motors", attempts);
+
+        if (left_motor_initialized && right_motor_initialized) {
+            ROS_INFO("Both motors initialized successfully.");
+            break; // 如果两个电机都已初始化，立即退出循环
         }
     }
 
-    if (left_motor_initialized && right_motor_initialized) {
-        ROS_INFO("Both motors initialized successfully after %d attempts.", attempts);
-    } else {
-        ROS_ERROR("Failed to initialize motors after %d attempts. Continuing with limited functionality.");
+    if (!left_motor_initialized || !right_motor_initialized) {
+        ROS_ERROR("Failed to initialize motors after %d attempts. Continuing with limited functionality.", attempts);
     }
 }
+
+
 
 
 // CAN消息回调函数
 void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
-    // 对于预期的CAN ID，进行正常处理
     switch (msg->id) {
         case 0x581:
         case 0x582:
-            if (msg->data[0] == 0x60) {
-                // 标准处理流程
-                bool isLeft = msg->id == 0x581;
-                if (isLeft && !left_motor_initialized) {
+            // 确保data[0]为0x60, data[1]为0x00, 和data[2]为0x20
+            if (msg->data[0] == 0x60 && msg->data[1] == 0x00 && msg->data[2] == 0x20) {
+                bool isLeft = (msg->id == 0x581);
+                if (isLeft) {
                     left_motor_initialized = true;
                     ROS_INFO("Left motor initialized successfully!");
-                } else if (!right_motor_initialized) {
+                } else {
                     right_motor_initialized = true;
                     ROS_INFO("Right motor initialized successfully!");
                 }
             } else {
-                ROS_WARN("Unexpected data in known frame 0x%X: %02X", msg->id, msg->data[0]);
-                if (!left_motor_initialized || !right_motor_initialized) {
-                    initMotors(can_pub); // 尝试重新初始化
-                }
+                ROS_WARN("Unexpected data in known frame 0x%X: %02X %02X %02X", msg->id, msg->data[0], msg->data[1], msg->data[2]);
             }
             break;
 
         default:
-            // 对未知ID，记录警告而不是错误
-            ROS_WARN("Ignoring unexpected CAN frame with ID: 0x%X, data: %02X", msg->id, msg->data[0]);
+            ROS_WARN("Ignoring unexpected CAN frame with ID: 0x%X, data: %02X %02X %02X %02X %02X %02X %02X %02X",
+                     msg->id, msg->data[0], msg->data[1], msg->data[2], msg->data[3], msg->data[4], msg->data[5], msg->data[6], msg->data[7]);
             break;
     }
 }
+
 
 
 
@@ -138,14 +136,13 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "cmd_vel_to_can_node");
     ros::NodeHandle nh;
 
-    // 获取参数
+    // 设置参数
     nh.param("wheel_distance", wheel_distance, 0.5);
     nh.param("max_speed_value", max_speed_value, 3276);
     nh.param("can_frame_dlc", can_frame_dlc, 8);
     nh.param("can_id_left_wheel", can_id_left_wheel, 0x601);
     nh.param("can_id_right_wheel", can_id_right_wheel, 0x602);
     nh.param("loop_rate", loop_rate, 10);
-
 
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
     ros::Subscriber cmd_vel_sub = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 100, boost::bind(cmdVelCallback, _1, boost::ref(can_pub)));
@@ -155,15 +152,9 @@ int main(int argc, char **argv) {
     initMotors(can_pub);
 
     ros::Rate rate(loop_rate);
-    // 主循环中加入错误处理
     while (ros::ok()) {
-        try {
-            ros::spinOnce();
-            rate.sleep();
-        } catch (const std::exception& e) {
-            ROS_ERROR("Exception caught: %s", e.what());
-            // 可以选择重新初始化连接或其他恢复策略
-        }
+        ros::spinOnce();
+        rate.sleep();
     }
 
     ros::shutdown();
