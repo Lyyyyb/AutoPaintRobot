@@ -44,6 +44,21 @@ void publishCanFrame(int id, uint8_t data[], ros::Publisher& pub) {
 void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& pub) {
     double v = msg->linear.x; // 读取线速度
     double omega = msg->angular.z; // 读取角速度
+
+    // 如果线速度和角速度都为零，则停止车辆
+    if (v == 0 && omega == 0) {
+        // 停止车辆，发送零速度命令
+        SpeedData stop_speed;
+        stop_speed.value = 0;
+
+        uint8_t stop_data[] = {0x2B, 0x01, 0x20, 0x00, stop_speed.bytes[0], stop_speed.bytes[1], 0x00, 0x00};
+
+        publishCanFrame(can_id_left_wheel, stop_data, pub); // 发布左轮CAN帧，传入发布者对象
+        publishCanFrame(can_id_right_wheel, stop_data, pub); // 发布右轮CAN帧，传入发布者对象
+
+        return; // 停止后不再继续执行后面的代码
+    }
+
     double v_l = v - omega * wheel_distance / 2; // 计算左轮速度
     double v_r = v + omega * wheel_distance / 2; // 计算右轮速度
 
@@ -65,11 +80,10 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     left_duty_cycle.value = duty_cycle_left;
     right_duty_cycle.value = duty_cycle_right;
 
-
     // 更新上一次发送的占空比
     last_left_speed = duty_cycle_left;
     last_right_speed = duty_cycle_right;
-    
+
     // 构造左轮和右轮的CAN数据数组
     uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_duty_cycle.bytes[0], left_duty_cycle.bytes[1], 0x00, 0x00};
     uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_duty_cycle.bytes[0], right_duty_cycle.bytes[1], 0x00, 0x00};
@@ -77,6 +91,7 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     publishCanFrame(can_id_left_wheel, data_l, pub); // 发布左轮CAN帧，传入发布者对象
     publishCanFrame(can_id_right_wheel, data_r, pub); // 发布右轮CAN帧，传入发布者对象
 }
+
 
 
 // 初始化电机函数
@@ -144,7 +159,7 @@ int main(int argc, char **argv) {
 
     // 设置参数
     // 设置并验证参数
-    nh.param("wheel_distance", wheel_distance, 0.5); // 默认轮距为0.5米
+    nh.param("wheel_distance", wheel_distance, 0.8); // 默认轮距为0.5米
     nh.param("max_speed_value", max_speed_value, 1.0); // 最大速度设置为1.0 m/s
     nh.param("can_frame_dlc", can_frame_dlc, 8); // 默认CAN帧长度为8
     nh.param("can_id_left_wheel", can_id_left_wheel, 0x601); // 左轮的CAN ID

@@ -129,6 +129,7 @@ class AutoPaintingRobot:
     def navigate_to_tree(self):
         # 读取串口数据并根据数据内容更新状态
         serial_data = self.read_serial_data()  
+        # serial_data = "OK"
         if serial_data == "OK" and AutoPaintingRobot.state_machine.state == 7:
             # 正常逻辑
             AutoPaintingRobot.state_machine.update_state(1)
