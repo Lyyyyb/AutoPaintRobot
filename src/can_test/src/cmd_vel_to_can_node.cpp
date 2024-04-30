@@ -1,11 +1,12 @@
-#include <ros/ros.h> // 导入ROS相关的头文件
-#include <geometry_msgs/Twist.h> // 机器人运动控制消息头文件
-#include <can_msgs/Frame.h> // CAN总线消息头文件
-#include <cmath> // 导入数学计算相关头文件
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <can_msgs/Frame.h>
+#include <cmath>
+#include <boost/bind.hpp>
 
 // 变量声明
 double wheel_distance; // 轮距，单位为米
-int max_speed_value; // 最大速度值，用于速度的数值转换
+double max_speed_value; // 最大速度值，用于速度的数值转换
 int can_frame_dlc; // CAN帧的数据长度
 int can_id_left_wheel; // 左轮CAN ID
 int can_id_right_wheel; // 右轮CAN ID
@@ -15,7 +16,7 @@ ros::Publisher can_pub; // 定义一个发布者，用于发送CAN消息
 
 // 定义一个联合体，用于int16_t和两个uint8_t之间的数据转换
 union SpeedData {
-    int16_t speed; // 存储速度值
+    int16_t value; // 存储速度值
     uint8_t bytes[2]; // 存储速度值的字节形式
 };
 
@@ -46,36 +47,41 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     double v_l = v - omega * wheel_distance / 2; // 计算左轮速度
     double v_r = v + omega * wheel_distance / 2; // 计算右轮速度
 
-    SpeedData left_speed; // 左轮速度数据
-    SpeedData right_speed; // 右轮速度数据
+    // 转换速度到占空比，范围 -1000 到 1000
+    int duty_cycle_left = static_cast<int>((v_l / max_speed_value) * 1000);
+    int duty_cycle_right = static_cast<int>((v_r / max_speed_value) * 1000);
+    duty_cycle_left = std::max(std::min(duty_cycle_left, 1000), -1000);
+    duty_cycle_right = std::max(std::min(duty_cycle_right, 1000), -1000);
 
-    // 速度缩放并转换为int16_t类型，同时处理溢出
-    left_speed.speed = std::max(std::min(static_cast<int>(v_l * max_speed_value), 32767), -32768);
-    right_speed.speed = std::max(std::min(static_cast<int>(v_r * max_speed_value), 32767), -32768);
+    // 日志输出当前占空比
+    ROS_INFO("Left wheel duty cycle: %d, Right wheel duty cycle: %d", duty_cycle_left, duty_cycle_right);
 
-    // 日志输出当前速度
-    ROS_INFO("Left wheel speed: %d, Right wheel speed: %d", left_speed.speed, right_speed.speed);
-
-    // 如果左右轮速度没有变化，则不发送CAN帧
-    if (left_speed.speed == last_left_speed && right_speed.speed == last_right_speed) {
+    // 如果左右轮占空比没有变化，则不发送CAN帧
+    if (duty_cycle_left == last_left_speed && duty_cycle_right == last_right_speed) {
         return;
     }
 
-    // 更新上一次发送的速度值
-    last_left_speed = left_speed.speed;
-    last_right_speed = right_speed.speed;
+    SpeedData left_duty_cycle, right_duty_cycle;
+    left_duty_cycle.value = duty_cycle_left;
+    right_duty_cycle.value = duty_cycle_right;
 
+
+    // 更新上一次发送的占空比
+    last_left_speed = duty_cycle_left;
+    last_right_speed = duty_cycle_right;
+    
     // 构造左轮和右轮的CAN数据数组
-    uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_speed.bytes[0], left_speed.bytes[1], 0x00, 0x00};
-    uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_speed.bytes[0], right_speed.bytes[1], 0x00, 0x00};
+    uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_duty_cycle.bytes[0], left_duty_cycle.bytes[1], 0x00, 0x00};
+    uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_duty_cycle.bytes[0], right_duty_cycle.bytes[1], 0x00, 0x00};
 
     publishCanFrame(can_id_left_wheel, data_l, pub); // 发布左轮CAN帧，传入发布者对象
     publishCanFrame(can_id_right_wheel, data_r, pub); // 发布右轮CAN帧，传入发布者对象
 }
 
+
 // 初始化电机函数
 void initMotors(ros::Publisher& pub) {
-    uint8_t init_motor_data[] = {0x2f, 0x00, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00};
+    uint8_t init_motor_data[] = {0x2f, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00};
     int max_attempts = 10;
     int attempts = 0;
 
@@ -137,12 +143,14 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh;
 
     // 设置参数
-    nh.param("wheel_distance", wheel_distance, 0.5);
-    nh.param("max_speed_value", max_speed_value, 3276);
-    nh.param("can_frame_dlc", can_frame_dlc, 8);
-    nh.param("can_id_left_wheel", can_id_left_wheel, 0x601);
-    nh.param("can_id_right_wheel", can_id_right_wheel, 0x602);
-    nh.param("loop_rate", loop_rate, 10);
+    // 设置并验证参数
+    nh.param("wheel_distance", wheel_distance, 0.5); // 默认轮距为0.5米
+    nh.param("max_speed_value", max_speed_value, 1.0); // 最大速度设置为1.0 m/s
+    nh.param("can_frame_dlc", can_frame_dlc, 8); // 默认CAN帧长度为8
+    nh.param("can_id_left_wheel", can_id_left_wheel, 0x601); // 左轮的CAN ID
+    nh.param("can_id_right_wheel", can_id_right_wheel, 0x602); // 右轮的CAN ID
+    nh.param("loop_rate", loop_rate, 10); // 循环频率设置为10Hz
+
 
     can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
     ros::Subscriber cmd_vel_sub = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 100, boost::bind(cmdVelCallback, _1, boost::ref(can_pub)));
