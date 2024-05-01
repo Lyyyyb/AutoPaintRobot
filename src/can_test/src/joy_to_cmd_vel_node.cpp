@@ -75,8 +75,8 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 
     // 应用缩放因子并乘以最大速度，独立控制线速度和角速度
     double linear_vel = -msg->axes[1] * linear_scale * MAX_LINEAR_SPEED; // 取反来调整线速度方向
-    double angular_vel = msg->axes[3] * angular_scale * (WHEEL_DISTANCE / 2); 
-
+    // double angular_vel = msg->axes[3] * angular_scale * (WHEEL_DISTANCE / 2); 
+    double angular_vel = msg->axes[3] * angular_scale; 
     // 如果手柄遥感回正，立即停止车辆
     if (fabs(msg->axes[1]) < JOYSTICK_DEADZONE) {
         linear_vel = 0.0;
