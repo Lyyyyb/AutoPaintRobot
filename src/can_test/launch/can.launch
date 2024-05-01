@@ -10,7 +10,10 @@
     </node>
     
     <!-- 操纵杆输入节点 -->
-    <node pkg="joy" type="joy_node" name="joy_node" output="screen" />
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen">
+        <param name="publish_rate" type="double" value="50"/> <!-- 设置消息发布频率为50Hz -->
+    </node>
+
 
     <!-- 将操纵杆输入转换为 cmd_vel 指令 -->
     <node pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel_node" output="screen">

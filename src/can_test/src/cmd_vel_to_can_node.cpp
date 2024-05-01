@@ -72,9 +72,9 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     ROS_INFO("Left wheel duty cycle: %d, Right wheel duty cycle: %d", duty_cycle_left, duty_cycle_right);
 
     // 如果左右轮占空比没有变化，则不发送CAN帧
-    if (duty_cycle_left == last_left_speed && duty_cycle_right == last_right_speed) {
-        return;
-    }
+    // if (duty_cycle_left == last_left_speed && duty_cycle_right == last_right_speed) {
+    //     return;
+    // }
 
     SpeedData left_duty_cycle, right_duty_cycle;
     left_duty_cycle.value = duty_cycle_left;
