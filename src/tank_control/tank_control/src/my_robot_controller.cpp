@@ -11,13 +11,13 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     float linear_speed = msg->linear.x;
     float angular_speed = msg->angular.z;
 
-    std::cout << "linear_speed: " << linear_speed << ", angular_speed: " << angular_speed << std::endl;
+    //std::cout << "linear_speed: " << linear_speed << ", angular_speed: " << angular_speed << std::endl;
 
     // 根据线速度和角速度计算左右轮的速度
     left_wheel_velocity_ = static_cast<int16_t>((linear_speed - (angular_speed * wheel_separation_ / 2)) / wheel_radius_);
     right_wheel_velocity_ = static_cast<int16_t>((linear_speed + (angular_speed * wheel_separation_ / 2)) / wheel_radius_);
 
-    ROS_INFO("left_wheel_velocity: %d, right_wheel_velocity: %d", left_wheel_velocity_, right_wheel_velocity_);
+    //ROS_INFO("left_wheel_velocity: %d, right_wheel_velocity: %d", left_wheel_velocity_, right_wheel_velocity_);
     // MyRobotHardware::robot_hardware_->getMotorSpeed();
     // 设置硬件接口中的速度命令
     MyRobotHardware::setMotorSpeed(left_wheel_velocity_, right_wheel_velocity_);

@@ -19,15 +19,22 @@ namespace CANInterfaceManager {
         sendFrame(frame);
     }
 
+    void logFrame(const can_msgs::Frame& frame) {
+        std::cout << "Sending CAN Frame - ID: " << std::hex << frame.id << std::dec
+                  << ", Data: ";
+        for (auto byte : frame.data) {
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
+        }
+        std::cout << std::endl;
+    }
+
     void sendFrame(const can_msgs::Frame& frame) {
         if (!can_pub_) {
             std::cerr << "错误: CAN 发布器未初始化。" << std::endl;
             return;
         }
 
-        // if (can_pub_.getNumSubscribers() < 1) {
-        //     std::cerr << "警告: 还没有订阅者接收 CAN 帧。" << std::endl;
-        // }
+        logFrame(frame);
 
         try {
             can_pub_.publish(frame);

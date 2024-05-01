@@ -66,29 +66,39 @@ namespace MyRobotHardware {
     }
 
     template<typename T>
-    void to_bytes(T value, uint8_t* destination) {
-        // 遍历类型 T 的每个字节
-        for (size_t i = 0; i < sizeof(T); ++i) {
-            destination[i] = (value >> (i * 8)) & 0xFF;
+    void valueToData(uint8_t* data, T value) {
+        static_assert(std::is_standard_layout<T>::value, "Type T must be standard layout");
+
+        T tmp = value;  // Create a temporary variable to ensure value is not modified
+        uint8_t* bytes = reinterpret_cast<uint8_t*>(&tmp);
+        for (size_t i = 0; i < sizeof(T); i++) {
+            data[i] = bytes[i];  // Copy byte by byte, lower byte first
         }
     }
 
+    // Log the data for debugging
+    void logData(const uint8_t* data, size_t size) {
+        std::cout << "Data to be sent: ";
+        for (size_t i = 0; i < size; ++i) {
+            std::cout << std::hex << static_cast<int>(data[i]) << " ";
+        }
+        std::cout << std::dec << std::endl; // Switch back to decimal for normal output
+    }
     template<typename T>
     void setMotorParameter(uint8_t canID, uint8_t Cmd, uint16_t Index, T Value) {
         can_msgs::Frame wheel_frame;
         wheel_frame.id = Send_Func_CAN_ID | canID;
-
-        wheel_frame.data[0] = Cmd;
+        wheel_frame.dlc = 8;
+        wheel_frame.data[0] = Cmd;  
         wheel_frame.data[1] = Index & 0xFF;
         wheel_frame.data[2] = (Index >> 8) & 0xFF;
 
-        // 使用模板函数来处理所有支持的类型
-        static_assert(std::is_same<T, float>::value || std::is_same<T, int16_t>::value || std::is_same<T, int>::value ||
-                    std::is_same<T, uint8_t>::value || std::is_same<T, uint16_t>::value || std::is_same<T, uint32_t>::value,
-                    "Unsupported type for CAN parameter value");
+        // Convert Value to bytes and store in data[4] to data[7]
+        valueToData<T>(wheel_frame.data.data() + 4, Value);
+        // Log the data before sending
+        // logData(wheel_frame.data.data(), wheel_frame.data.size());  // Use .data() and .size() for boost::array
 
-        to_bytes(Value, wheel_frame.data.data() + 4);  // 直接调用泛型转换字节函数
-
+        // Send the CAN frame
         CANInterfaceManager::sendFrame(wheel_frame);
     }
 }

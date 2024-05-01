@@ -3,7 +3,6 @@
 #include <can_msgs/Frame.h>
 #include <cmath>
 #include <boost/bind.hpp>
-
 // 变量声明
 double wheel_distance; // 轮距，单位为米
 double max_speed_value; // 最大速度值，用于速度的数值转换
@@ -11,19 +10,15 @@ int can_frame_dlc; // CAN帧的数据长度
 int can_id_left_wheel; // 左轮CAN ID
 int can_id_right_wheel; // 右轮CAN ID
 int loop_rate; // 循环频率
-
 ros::Publisher can_pub; // 定义一个发布者，用于发送CAN消息
-
 // 定义一个联合体，用于int16_t和两个uint8_t之间的数据转换
 union SpeedData {
     int16_t value; // 存储速度值
     uint8_t bytes[2]; // 存储速度值的字节形式
 };
-
 // 存储上一次发送的速度值，避免重复发送相同的速度
 int16_t last_left_speed = 0;
 int16_t last_right_speed = 0;
-
 // 电机初始化状态
 bool left_motor_initialized = false;
 bool right_motor_initialized = false;
@@ -91,9 +86,6 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     publishCanFrame(can_id_left_wheel, data_l, pub); // 发布左轮CAN帧，传入发布者对象
     publishCanFrame(can_id_right_wheel, data_r, pub); // 发布右轮CAN帧，传入发布者对象
 }
-
-
-
 // 初始化电机函数
 void initMotors(ros::Publisher& pub) {
     uint8_t init_motor_data[] = {0x2f, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -118,10 +110,6 @@ void initMotors(ros::Publisher& pub) {
         ROS_ERROR("Failed to initialize motors after %d attempts. Continuing with limited functionality.", attempts);
     }
 }
-
-
-
-
 // CAN消息回调函数
 void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
     switch (msg->id) {
@@ -148,11 +136,6 @@ void canCallBack(const can_msgs::Frame::ConstPtr& msg) {
             break;
     }
 }
-
-
-
-
-
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cmd_vel_to_can_node");
     ros::NodeHandle nh;
