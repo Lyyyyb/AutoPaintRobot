@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/noetic/include/**",
+        "/home/eggze2/rosdev/catkin_workspace/devel/include/**",
+        "/home/eggze2/rosdev/catkin_workspace/src/joy_control/include/**",
+        "/home/eggze2/rosdev/catkin_workspace/src/robot_bringup/include/**",
+        "/home/eggze2/rosdev/robot_control_ws/src/tank_control/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

@@ -1,0 +1,11 @@
+tank_control:
+  wheel_separation: 0.5   # 轮间距
+  wheel_radius: 0.1       # 轮半径
+  cmd_vel_timeout: 0.25   # 超时时间
+  publish_rate: 50        # 发布频率
+topic_to_socket_can:
+  can_device: "can0"  # CAN 设备名称，可能需要根据系统配置调整
+  can_baudrate: 500000  # 波特率，单位为 bps
+socket_to_topic_node:
+  can_device: "can0"  # CAN 设备名称，可能需要根据系统配置调整
+  can_baudrate: 500000  # 波特率，单位为 bps

@@ -1,0 +1,27 @@
+<launch>
+    <!-- 加载控制器配置 -->
+    <rosparam file="$(find tank_control)/param/controller_config.yaml" command="load"/>
+
+    <!-- 启动机器人控制器 -->
+    <node pkg="tank_control" name="tank_control_node" type="tank_control_node" output="screen">
+        <param name="wheel_separation" value="0.5"/>
+        <param name="wheel_radius" value="0.1"/>
+    </node>
+
+    <!-- topic 转 CAN -->
+    <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
+        <param name="can_device" value="can0" />
+    </node>
+
+    <!-- CAN 转 topic -->
+    <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
+        <param name="can_device" value="can0" />
+    </node>
+
+    <!-- 启动 joy_node -->
+    <!-- <node pkg="joy" type="joy_node" name="joy_node" output="screen" /> -->
+
+    <!-- 启动你的 Python 节点 -->
+    <!-- <node pkg="joy_control" type="joy_to_twist.py" name="joy_to_twist" output="screen" /> -->
+
+</launch>
