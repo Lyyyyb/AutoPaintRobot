@@ -6,17 +6,7 @@ extern ros::Subscriber can_sub_;
 
 namespace CANInterfaceManager {
     void frameCallback(const can_msgs::Frame::ConstPtr& frame) {
-        static int times = 0;
-        std::cout << times++ << " ID: " << std::hex << std::setw(3) << std::setfill('0') << frame->id << " data: ";
-        for (int i = 0; i < 8; ++i) {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(frame->data[i]) << " ";
-        }
-        std::cout << std::endl;
-        canMsgHandle(*frame);
-    }
-
-    void canMsgHandle(const can_msgs::Frame& frame) {
-        sendFrame(frame);
+        sendFrame(*frame);
     }
 
     void logFrame(const can_msgs::Frame& frame) {

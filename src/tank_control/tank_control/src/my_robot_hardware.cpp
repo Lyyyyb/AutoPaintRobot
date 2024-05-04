@@ -84,12 +84,14 @@ namespace MyRobotHardware {
         }
         std::cout << std::dec << std::endl; // Switch back to decimal for normal output
     }
+
     template<typename T>
     void setMotorParameter(uint8_t canID, uint8_t Cmd, uint16_t Index, T Value) {
         can_msgs::Frame wheel_frame;
         wheel_frame.id = Send_Func_CAN_ID | canID;
         wheel_frame.dlc = 8;
-        wheel_frame.data[0] = Cmd;  
+
+        wheel_frame.data[0] = Cmd;
         wheel_frame.data[1] = Index & 0xFF;
         wheel_frame.data[2] = (Index >> 8) & 0xFF;
 

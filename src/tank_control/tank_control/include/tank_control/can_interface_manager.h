@@ -8,7 +8,6 @@
 #include <socketcan_interface/socketcan.h>
 
 namespace CANInterfaceManager {
-    void canMsgHandle(const can_msgs::Frame& frame);
     void sendFrame(const can_msgs::Frame& frame);
     void frameCallback(const can_msgs::Frame::ConstPtr& frame);
 }

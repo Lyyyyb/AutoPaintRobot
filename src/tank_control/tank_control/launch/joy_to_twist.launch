@@ -1,6 +1,8 @@
 <launch>
   <!-- 启动 joy_node -->
-  <node pkg="joy" type="joy_node" name="joy_node" output="screen" />
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen">
+        <param name="publish_rate" type="double" value="50"/> <!-- 设置消息发布频率为50Hz -->
+    </node>
 
   <!-- 启动你的 Python 节点 -->
   <node pkg="joy_control" type="joy_to_twist.py" name="joy_to_twist" output="screen" />
