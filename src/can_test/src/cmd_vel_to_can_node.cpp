@@ -284,6 +284,11 @@
 //     return 0; // 返回0表示正常退出
 // }
 
+
+
+
+
+
 // 初始化电机函数
 // void initMotors(ros::Publisher& pub) {
 //     uint8_t init_motor_data[] = {0x2f, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00};
