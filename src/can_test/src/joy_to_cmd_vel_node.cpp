@@ -55,9 +55,6 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 }
 
 
-
-
-
 int main(int argc, char **argv) {
     ros::init(argc, argv, "joy_to_cmd_vel_node");
     ros::NodeHandle nh;
