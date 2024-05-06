@@ -10,12 +10,12 @@
 
     <!-- topic 转 CAN -->
     <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
-        <param name="can_device" value="can0" />
+        <param name="can_device" value="vcan0" />
     </node>
 
     <!-- CAN 转 topic -->
     <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
-        <param name="can_device" value="can0" />
+        <param name="can_device" value="vcan0" />
     </node>
 
     <!-- 启动 joy_node -->
