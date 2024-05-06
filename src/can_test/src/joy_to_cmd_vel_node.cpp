@@ -19,50 +19,68 @@ double angular_scale_exponent = 0.5; // 添加角速度非线性调整因子
 double speed_smoothing_factor = 0.2; // 添加速度平滑处理因子
 // 手柄控制消息的回调函数
 // 全局变量，定义最大线速度和最小角速度
-
-
+geometry_msgs::Twist cmd_vel;
 void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
-    ROS_INFO("Linear Vel: %f, Angular Vel: %f", msg->axes[1], msg->axes[3]); // 打印线速度和角速度信息
+    ROS_INFO("Linear Vel: %f, Angular Vel: %f", msg->axes[1], msg->axes[3]);
 
-    // 加减速逻辑
+    // 增减速逻辑
     if (msg->buttons[4] == 1) {  // L1 增加线速度
         MAX_LINEAR_SPEED += 0.1;
-        MAX_LINEAR_SPEED = std::max(0.2, MAX_LINEAR_SPEED);  // 最小值为0.2
         ROS_INFO("Max linear speed increased to: %f", MAX_LINEAR_SPEED);
     }
     if (msg->axes[2] == -1.0) {  // L2 减少线速度
         MAX_LINEAR_SPEED -= 0.1;
-        MAX_LINEAR_SPEED = std::max(0.2, MAX_LINEAR_SPEED);  // 最小值为0.2
         ROS_INFO("Max linear speed decreased to: %f", MAX_LINEAR_SPEED);
     }
+    MAX_LINEAR_SPEED = std::max(0.2, MAX_LINEAR_SPEED);  // 确保速度不低于最小值
+
     if (msg->buttons[5] == 1) {  // R1 增加角速度
-        MIN_ANGULAR_VELOCITY += 0.1;
-        MIN_ANGULAR_VELOCITY = std::max(0.2, MIN_ANGULAR_VELOCITY);  // 最小值为0.2
+        MIN_ANGULAR_VELOCITY += 0.1;  
         ROS_INFO("Min angular velocity increased to: %f", MIN_ANGULAR_VELOCITY);
     }
     if (msg->axes[5] == -1.0) {  // R2 减少角速度
         MIN_ANGULAR_VELOCITY -= 0.1;
-        MIN_ANGULAR_VELOCITY = std::max(0.2, MIN_ANGULAR_VELOCITY);  // 最小值为0.2
         ROS_INFO("Min angular velocity decreased to: %f", MIN_ANGULAR_VELOCITY);
     }
+    MIN_ANGULAR_VELOCITY = std::max(0.2, MIN_ANGULAR_VELOCITY);  // 确保角速度不低于最小值
 
-    // 现有的速度计算和发布逻辑
-    double linear_vel = -msg->axes[1] * MAX_LINEAR_SPEED; // 应用缩放因子和最大速度限制
-    double angular_vel = msg->axes[3] * MIN_ANGULAR_VELOCITY; // 应用最小角速度限制
+    double linear_vel = -msg->axes[1] * MAX_LINEAR_SPEED;
+    double angular_vel = msg->axes[3] * MIN_ANGULAR_VELOCITY;
 
-    geometry_msgs::Twist cmd_vel; // 创建Twist消息，用于发送速度指令
+    
+    cmd_vel.linear.x = linear_vel;
+    cmd_vel.angular.z = angular_vel;
 
-    // 根据速度的阈值判断如何发布速度指令
-    if (fabs(linear_vel) > MIN_SPEED_THRESHOLD) {
-        cmd_vel.linear.x = linear_vel; // 线速度赋值
-        cmd_vel.angular.z = angular_vel; // 角速度直接赋值
-    } else {
-        cmd_vel.linear.x = 0; // 线速度设置为0
-        cmd_vel.angular.z = angular_vel; // 低速下直接控制角速度
+    //cmd_vel_pub.publish(cmd_vel);
+}
+
+
+
+
+
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "joy_to_cmd_vel_node");
+    ros::NodeHandle nh;
+
+    nh.param("/joy_to_cmd_vel_node/max_linear_speed", MAX_LINEAR_SPEED, 1.0);
+    nh.param("/joy_to_cmd_vel_node/min_speed_threshold", MIN_SPEED_THRESHOLD, 0.1);
+    nh.param("/joy_to_cmd_vel_node/wheel_distance", WHEEL_DISTANCE, 0.8);
+
+    cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+    ros::Subscriber joy_sub = nh.subscribe("joy", 1000, joyCallback);
+
+    ros::Rate rate(200); // 设置发布频率为10Hz
+
+    while (ros::ok()) {
+        cmd_vel_pub.publish(cmd_vel);
+        ros::spinOnce(); // 处理回调函数
+        rate.sleep(); // 按照设置的频率休眠
     }
 
-    cmd_vel_pub.publish(cmd_vel); // 发布速度控制指令
+    return 0;
 }
+
+
 
 // 手柄控制消息的回调函数
 // void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
@@ -149,20 +167,3 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 //         ROS_INFO("Min angular velocity decreased to: %f", MIN_ANGULAR_VELOCITY);
 //     }
 // }
-
-
-
-int main(int argc, char **argv) {
-    ros::init(argc, argv, "joy_to_cmd_vel_node");
-    ros::NodeHandle nh;
-
-    nh.param("/joy_to_cmd_vel_node/max_linear_speed", MAX_LINEAR_SPEED, 1.0);
-    nh.param("/joy_to_cmd_vel_node/min_speed_threshold", MIN_SPEED_THRESHOLD, 0.1);
-    nh.param("/joy_to_cmd_vel_node/wheel_distance", WHEEL_DISTANCE, 0.8);
-
-    cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
-    ros::Subscriber joy_sub = nh.subscribe("joy", 1000, joyCallback);
-
-    ros::spin();
-    return 0;
-}

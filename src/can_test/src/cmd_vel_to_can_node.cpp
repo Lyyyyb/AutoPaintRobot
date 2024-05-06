@@ -448,6 +448,8 @@ int can_id_left_wheel; // 左轮CAN ID
 int can_id_right_wheel; // 右轮CAN ID
 int loop_rate; // 循环频率
 ros::Publisher can_pub; // 定义一个发布者，用于发送CAN消息
+const double MAX_ANGULAR_VELOCITY = 1.0; // 设置最大角速度为1.0弧度/秒，根据实际情况调整
+const double MAX_LINEAR_SPEED = 1.0; // 设置最大角速度为1.0弧度/秒，根据实际情况调整
 
 union SpeedData {
     int16_t value;
@@ -457,8 +459,8 @@ union SpeedData {
 // 存储上一次发送的速度值
 int last_left_speed = 0;
 int last_right_speed = 0;
-
-
+ 
+      
 void publishCanFrame(int id, uint8_t data[], ros::Publisher& pub) {
     can_msgs::Frame frame;
     frame.id = id;
@@ -484,61 +486,66 @@ void initMotors(ros::Publisher& pub) {
     ROS_INFO("Initialization commands sent %d times to motors.", max_attempts);
 }
 void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& pub) {
-    double v = msg->linear.x; // 读取线速度
-    double omega = msg->angular.z; // 读取角速度
 
-    // 如果线速度和角速度都为零，则发送停车指令
-    if (v == 0 && omega == 0) {
-        SpeedData stop_speed;
-        stop_speed.value = 0;
-        uint8_t stop_data[] = {0x2B, 0x01, 0x20, 0x00, stop_speed.bytes[0], stop_speed.bytes[1], 0x00, 0x00};
-        publishCanFrame(can_id_left_wheel, stop_data, pub);
-        publishCanFrame(can_id_right_wheel, stop_data, pub);
-        return;
+    static double prev_v = 0.0; // 保存上一次的线速度
+    static double prev_omega = 0.0; // 保存上一次的角速度
+    double v = msg->linear.x;
+    double omega = msg->angular.z;
+    // 检查当前速度和角速度是否与上一次相同
+    if (v == prev_v && omega == prev_omega) {
+        return; // 如果相同，则不发送CAN消息
     }
-
-    // 计算左右轮速度
+    // if (v == 0 && omega == 0) {
+    //     SpeedData stop_speed;
+    //     stop_speed.value = 0;
+    //     uint8_t stop_data[] = {0x2B, 0x01, 0x20, 0x00, stop_speed.bytes[0], stop_speed.bytes[1], 0x00, 0x00};
+    //     publishCanFrame(can_id_left_wheel, stop_data, pub);
+    //     publishCanFrame(can_id_right_wheel, stop_data, pub);
+    //     ROS_INFO("Stopping both wheels");
+    //     return;
+    // }
+    prev_v = v;
+    prev_omega = omega;
+    
     double v_l = v - omega * wheel_distance / 2;
     double v_r = v + omega * wheel_distance / 2;
 
-    // 转换速度到占空比，范围 -1000 到 1000
     int duty_cycle_left = static_cast<int>((v_l / max_speed_value) * 1000);
     int duty_cycle_right = static_cast<int>((v_r / max_speed_value) * 1000);
+
     duty_cycle_left = std::max(std::min(duty_cycle_left, 1000), -1000);
     duty_cycle_right = std::max(std::min(duty_cycle_right, 1000), -1000);
 
-    // 如果占空比有变化，则发送更新的CAN帧
-    if (duty_cycle_left != last_left_speed || duty_cycle_right != last_right_speed) {
-        SpeedData left_duty_cycle, right_duty_cycle;
-        left_duty_cycle.value = duty_cycle_left;
-        right_duty_cycle.value = duty_cycle_right;
-        uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_duty_cycle.bytes[0], left_duty_cycle.bytes[1], 0x00, 0x00};
-        uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_duty_cycle.bytes[0], right_duty_cycle.bytes[1], 0x00, 0x00};
-        publishCanFrame(can_id_left_wheel, data_l, pub);
-        publishCanFrame(can_id_right_wheel, data_r, pub);
+    SpeedData left_duty_cycle, right_duty_cycle;
+    left_duty_cycle.value = duty_cycle_left;
+    right_duty_cycle.value = duty_cycle_right;
+    uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_duty_cycle.bytes[0], left_duty_cycle.bytes[1], 0x00, 0x00};
+    uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_duty_cycle.bytes[0], right_duty_cycle.bytes[1], 0x00, 0x00};
 
-        // 更新上一次的占空比
-        last_left_speed = duty_cycle_left;
-        last_right_speed = duty_cycle_right;
-    }
+    publishCanFrame(can_id_left_wheel, data_l, pub);
+    publishCanFrame(can_id_right_wheel, data_r, pub);
+
+    ROS_INFO("Left wheel duty cycle: %d, Right wheel duty cycle: %d", duty_cycle_left, duty_cycle_right);
 }
+
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cmd_vel_to_can_node");
     ros::NodeHandle nh;
 
     // Parameter setup
-    nh.param("wheel_distance", wheel_distance, 0.8);
+    nh.param("wheel_distance", wheel_distance, 1.0);
     nh.param("max_speed_value", max_speed_value, 1.0);
     nh.param("can_frame_dlc", can_frame_dlc, 8);
     nh.param("can_id_left_wheel", can_id_left_wheel, 0x601);
     nh.param("can_id_right_wheel", can_id_right_wheel, 0x602);
-    nh.param("loop_rate", loop_rate, 10);
-
-    can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
+    nh.param("loop_rate", loop_rate, 200);
     ros::Subscriber cmd_vel_sub = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1000, boost::bind(cmdVelCallback, _1, boost::ref(can_pub)));
+    can_pub = nh.advertise<can_msgs::Frame>("sent_messages", 100);
+
     // Initialize motors
-    initMotors(can_pub);
+    //initMotors(can_pub);
 
     ros::Rate rate(loop_rate);
     while (ros::ok()) {

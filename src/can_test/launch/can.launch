@@ -1,17 +1,21 @@
 <launch>
     <!-- topic 转 CAN -->
-    <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
+    <!-- <node pkg="socketcan_bridge" name="topic_to_socketcan_node" type="topic_to_socketcan_node" output="screen">
         <param name="can_device" value="can0" />
     </node>
-    
+     -->
     <!-- CAN 转 topic -->
-    <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
+    <!-- <node pkg="socketcan_bridge" name="socketcan_to_topic_node" type="socketcan_to_topic_node" output="screen">
+        <param name="can_device" value="can0" />
+    </node> -->
+    <!-- topic 转 CAN --> <!-- CAN 转 topic -->
+    <node pkg="socketcan_bridge" name="socketcan_bridge_node" type="socketcan_bridge_node" output="screen">
         <param name="can_device" value="can0" />
     </node>
-    
+
     <!-- 操纵杆输入节点 -->
     <node name="joy_node" pkg="joy" type="joy_node" output="screen">
-        <param name="publish_rate" type="double" value="50"/> <!-- 设置消息发布频率为50Hz -->
+        <param name="publish_rate" type="double" value="200"/> <!-- 设置消息发布频率为50Hz -->
     </node>
 
 
