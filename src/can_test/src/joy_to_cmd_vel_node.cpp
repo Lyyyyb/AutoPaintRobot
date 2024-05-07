@@ -1,3 +1,5 @@
+#if 0
+
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Twist.h>
@@ -79,7 +81,128 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+#endif
+#if 1
+#include <ros/ros.h>
+#include <sensor_msgs/Joy.h>
+#include <geometry_msgs/Twist.h>
+#include <cmath>
 
+class JoyToCmdVelNode {
+private:
+    ros::NodeHandle nh; // ROS节点句柄
+    ros::Publisher cmd_vel_pub; // 速度指令发布者
+    ros::Subscriber joy_sub; // 手柄订阅者
+    geometry_msgs::Twist cmd_vel; // 速度指令消息
+    double max_linear_speed; // 最大线速度
+    double min_speed_threshold; // 最小速度阈值
+    double wheel_distance; // 轮间距
+    double min_angular_velocity; // 最小角速度
+    double joy_deadzone; // 手柄死区
+
+public:
+    JoyToCmdVelNode() : max_linear_speed(1.0), min_speed_threshold(0.1), wheel_distance(0.8), min_angular_velocity(0.2), joy_deadzone(0.05) {
+        // 从参数服务器获取参数并进行验证
+        nh.param("/joy_to_cmd_vel_node/max_linear_speed", max_linear_speed, 1.0);
+        nh.param("/joy_to_cmd_vel_node/min_speed_threshold", min_speed_threshold, 0.1);
+        nh.param("/joy_to_cmd_vel_node/wheel_distance", wheel_distance, 0.8);
+        nh.param("/joy_to_cmd_vel_node/min_angular_velocity", min_angular_velocity, 0.2);
+        validateParameters();
+
+        // 初始化发布者和订阅者
+        cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+        joy_sub = nh.subscribe("joy", 1000, &JoyToCmdVelNode::joyCallback, this);
+    }
+
+    // 手柄回调函数
+    void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
+        adjustLinearSpeed(msg);
+        adjustAngularSpeed(msg);
+
+        // 设置速度指令
+        cmd_vel.linear.x = -msg->axes[1] * max_linear_speed;
+        cmd_vel.angular.z = msg->axes[3] * min_angular_velocity;
+    }
+
+    // 运行节点主循环
+    void run() {
+        ros::Rate rate(100); // 设置循环频率为100Hz
+
+        // 主循环
+        while (ros::ok()) {
+            // 发布速度指令
+            cmd_vel_pub.publish(cmd_vel);
+
+            ros::spinOnce(); // 处理回调函数
+            rate.sleep(); // 根据设置的频率休眠
+        }
+    }
+
+private:
+    // 调整线速度
+    void adjustLinearSpeed(const sensor_msgs::Joy::ConstPtr& msg) {
+        // 调整最大线速度
+        if (msg->buttons[4] == 1) { // L1按键增加线速度
+            max_linear_speed += 0.1;
+            ROS_INFO("最大线速度增加至: %f", max_linear_speed);
+        }
+        if (msg->axes[2] == -1.0) { // L2按键减少线速度
+            max_linear_speed -= 0.1;
+            ROS_INFO("最大线速度减少至: %f", max_linear_speed);
+        }
+        // 确保线速度不低于最小阈值
+        max_linear_speed = std::max(min_speed_threshold, max_linear_speed);
+    }
+
+    // 调整角速度
+    void adjustAngularSpeed(const sensor_msgs::Joy::ConstPtr& msg) {
+        // 调整最小角速度
+        if (msg->buttons[5] == 1) { // R1按键增加角速度
+            min_angular_velocity += 0.1;
+            ROS_INFO("最小角速度增加至: %f", min_angular_velocity);
+        }
+        if (msg->axes[5] == -1.0) { // R2按键减少角速度
+            min_angular_velocity -= 0.1;
+            ROS_INFO("最小角速度减少至: %f", min_angular_velocity);
+        }
+        // 确保角速度不低于最小阈值
+        min_angular_velocity = std::max(min_speed_threshold, min_angular_velocity);
+    }
+
+    // 参数验证
+    void validateParameters() {
+        // 最大线速度应大于零
+        if (max_linear_speed <= 0.0) {
+            ROS_WARN("最大线速度应大于零。已重置为默认值。");
+            max_linear_speed = 1.0;
+        }
+        // 最小角速度应大于零
+        if (min_angular_velocity <= 0.0) {
+            ROS_WARN("最小角速度应大于零。已重置为默认值。");
+            min_angular_velocity = 0.2;
+        }
+        // 最大线速度不应小于最小速度阈值
+        if (max_linear_speed < min_speed_threshold) {
+            ROS_WARN("最大线速度不应小于最小速度阈值。已重置为默认值。");
+            max_linear_speed = 1.0;
+            min_speed_threshold = 0.1;
+        }
+        // 最小速度阈值应大于零
+        if (min_speed_threshold <= 0.0) {
+            ROS_WARN("最小速度阈值应大于零。已重置为默认值。");
+            min_speed_threshold = 0.1;
+        }
+    }
+};
+
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "joy_to_cmd_vel_node"); // 初始化节点
+    JoyToCmdVelNode joy_to_cmd_vel_node;
+    joy_to_cmd_vel_node.run(); // 运行主循环
+    return 0;
+}
+
+#endif
 
 // 手柄控制消息的回调函数
 // void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
