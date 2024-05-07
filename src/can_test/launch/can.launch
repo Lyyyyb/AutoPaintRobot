@@ -29,7 +29,7 @@
     <!-- 将 cmd_vel 指令转换为 CAN 消息 -->
     <node pkg="can_test" name="cmd_vel_to_can_node" type="cmd_vel_to_can_node" output="screen">
         <param name="wheel_distance" value="0.5" />
-        <param name="max_speed_value" value="32767" />
+        <param name="max_speed_value" value="1.0" />
         <param name="can_frame_dlc" value="8" />
         <param name="can_id_left_wheel" value="0x601" />
         <param name="can_id_right_wheel" value="0x602" />
