@@ -35,4 +35,8 @@
         <param name="can_id_right_wheel" value="0x602" />
         <param name="loop_rate" value="10" />
     </node>
+    <!-- 启动 joy_control_node 节点 -->
+    <!-- <node pkg="can_test" name="joy_to_serial_node" type="joy_to_serial_node" output="screen"/> -->
+    <node pkg="can_test" name="joy_to_message_node" type="joy_to_message_node" output="screen"/>
+    <node pkg="can_test" name="message_to_serial_node" type="message_to_serial_node" output="screen"/>
 </launch>

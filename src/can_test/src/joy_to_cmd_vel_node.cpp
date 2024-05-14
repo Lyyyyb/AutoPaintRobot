@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 }
 
 #endif
-#if 1
+#if 0
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Twist.h>

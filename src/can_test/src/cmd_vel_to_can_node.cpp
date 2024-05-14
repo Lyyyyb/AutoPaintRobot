@@ -433,7 +433,7 @@
 //     left_motor_ready = false;
 //     right_motor_ready = false;
 // }
-#if 0
+#if 1
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
@@ -560,7 +560,7 @@ int main(int argc, char **argv) {
 
 #endif
 
-#if 1
+#if 0
 #include <ros/ros.h>  // ROS 头文件
 #include <geometry_msgs/Twist.h>  // 几何消息中的速度消息类型
 #include <can_msgs/Frame.h>  // CAN 消息类型

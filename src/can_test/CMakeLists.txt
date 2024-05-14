@@ -11,7 +11,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  serial
+  sensor_msgs
   socketcan_bridge
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -53,7 +56,10 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message1.msg
 #   Message2.msg
 # )
-
+add_message_files(
+  FILES
+  CustomControlMsg.msg
+)
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -73,6 +79,10 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   std_msgs
 # )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,8 +116,9 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES can_test
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+ CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
+  message_runtime
 )
 
 ###########
@@ -138,6 +149,9 @@ include_directories(
 add_executable(can_test src/can_test.cpp)
 add_executable(joy_to_cmd_vel_node src/joy_to_cmd_vel_node.cpp)
 add_executable(cmd_vel_to_can_node src/cmd_vel_to_can_node.cpp)
+add_executable(joy_to_serial_node src/joy_to_serial_node.cpp)
+add_executable(joy_to_message_node src/joy_to_message_node.cpp)
+add_executable(message_to_serial_node src/message_to_serial_node.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -159,6 +173,15 @@ target_link_libraries(joy_to_cmd_vel_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(cmd_vel_to_can_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(joy_to_serial_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(joy_to_message_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(message_to_serial_node
   ${catkin_LIBRARIES}
 )
 #############
