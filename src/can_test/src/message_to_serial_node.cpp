@@ -16,7 +16,7 @@ void customControlCallback(const can_test::CustomControlMsg::ConstPtr& msg)
     int button1 = msg->button1;
     int button2 = msg->button2;
 
-    int speed = 10000; // 默认速度
+    int speed = 2000; // 默认速度
     int mode = 1; // 默认模式
 
     // 检查是否需要发送滑台控制指令

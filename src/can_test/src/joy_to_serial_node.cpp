@@ -17,7 +17,7 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
     int x_axis = -joy->axes[6] * 1000; // X轴滑台需要运动的步数，乘以-1来矫正方向
  // X轴滑台需要运动的步数
     int y_axis = joy->axes[7] * 1000; // Y轴滑台需要运动的步数
-    int speed = 2000; // 默认速度
+    int speed = 1000; // 默认速度
     int mode = 1; // 默认模式
 
     // 检查是否需要发送滑台控制指令

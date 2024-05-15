@@ -9,8 +9,8 @@ can_test::CustomControlMsg custom_msg;
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 {
     // 获取手柄数据
-    int x_axis = -joy->axes[6] * 1000; // X轴滑台需要运动的步数，乘以-1来矫正方向
-    int y_axis = joy->axes[7] * 1000; // Y轴滑台需要运动的步数
+    int x_axis = -joy->axes[6] * 2000; // X轴滑台需要运动的步数，乘以-1来矫正方向
+    int y_axis = joy->axes[7] * 5000; // Y轴滑台需要运动的步数
     int button0 = joy->buttons[0];
     int button1 = joy->buttons[1];
     int button2 = joy->buttons[2];
