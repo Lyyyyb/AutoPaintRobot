@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     // 设置串口参数
-    ser.setPort("/dev/ttyUSB0"); // 请根据实际串口号修改
+    ser.setPort("/dev/ttyUSB1"); // 请根据实际串口号修改
     ser.setBaudrate(115200);
     serial::Timeout to = serial::Timeout::simpleTimeout(1000);
     ser.setTimeout(to);
