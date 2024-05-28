@@ -3,7 +3,8 @@ import can
 import logging
 import enum
 import math
-
+import rospy
+from sensor_msgs.msg import Joy
 
 class CANMotorController:
     PARAM_TABLE = {
@@ -236,6 +237,8 @@ class CANMotorController:
             "HHHH", target_angle_mapped, target_velocity_mapped, Kp_mapped, Kd_mapped
         )
         data1 = [b for b in data1_bytes]
+        rospy.loginfo(f"data1: {[hex(b) for b in data1]}")
+
         return data1
 
     def send_receive_can_message(self, cmd_mode, data2, data1, timeout=200):
@@ -262,11 +265,13 @@ class CANMotorController:
             self.bus.send(message)
         except:
             logging.info("Failed to send the message.")
+            rospy.loginfo("Failed to send the message.")
             return None, None
 
         # Output details of the sent message
         logging.debug(
             f"Sent message with ID {hex(arbitration_id)}, data: {data1}")
+        rospy.loginfo(f"Sending message with ID {hex(arbitration_id)}, data: {data1}")
 
         # Receive a CAN message with a 1-second timeout
         # 1-second timeout for receiving
@@ -419,6 +424,7 @@ class CANMotorController:
         data1 = [b for b in struct.pack("<H", feature_code)]
         data1.extend([type_code, 0x00])
         data1.extend(encoded_value)
+        rospy.loginfo(f"data1: {[hex(b) for b in data1]}")
 
         # Clear the CAN receive buffer
         self.clear_can_rx()
@@ -542,11 +548,23 @@ class CANMotorController:
         Kp_mapped = self._linear_mapping(Kp, 0.0, 500.0)
         Kd_mapped = self._linear_mapping(Kd, 0.0, 5.0)
 
+        rospy.loginfo("target_angle_mapped: %d", target_angle_mapped)
+        rospy.loginfo("target_velocity_mapped: %d", target_velocity_mapped)
+        rospy.loginfo("Kp_mapped: %d", Kp_mapped)
+        rospy.loginfo("Kd_mapped: %d", Kd_mapped)
         # 创建8字节的数据区
         data1_bytes = struct.pack(
             "HHHH", target_angle_mapped, target_velocity_mapped, Kp_mapped, Kd_mapped
         )
         data1 = [b for b in data1_bytes]
+
+        # 输出 data1 的十六进制表示
+        hex_output = " ".join(f"{byte:02X}" for byte in data1)
+        rospy.loginfo("data1 (hex): %s", hex_output)
+
+        # 输出 data1 的十进制表示
+        dec_output = " ".join(f"{byte}" for byte in data1)
+        rospy.loginfo("data1 (dec): %s", dec_output)
 
         # 使用send_receive_can_message方法发送消息并接收响应
         received_msg_data, received_msg_arbitration_id = self.send_receive_can_message(
@@ -556,3 +574,129 @@ class CANMotorController:
         )
 
         return self.parse_received_msg(received_msg_data, received_msg_arbitration_id)
+    
+
+    def start_motor(self):
+        self.write_single_param("run_mode", value=1)
+        self.enable()
+        self.write_single_param("limit_spd", value=10)
+        self.write_single_param("loc_ref", value=3.14)
+
+    def reverse_motor(self):
+        self.write_single_param("run_mode", value=1)
+        self.enable()
+        self.write_single_param("limit_spd", value=10)
+        self.write_single_param("loc_ref", value=-3.14)
+
+    def stop_motor(self):
+        self.write_single_param("run_mode", value=0)
+        self.disable()
+
+class JoyToMotorController:
+    def __init__(self):
+        rospy.init_node('joy_to_pcan_node')
+        # 创建PCAN适配器对象
+        # self.bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=1000000)
+        # self.bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=500000)
+        self.bus = can.interface.Bus(bustype='socketcan', channel='can0', bitrate=1000000)
+        # 使用PCAN适配器对象初始化CANMotorController
+        self.controller = CANMotorController(self.bus)
+        self.sub = rospy.Subscriber('joy', Joy, self.joy_callback)
+        self.button_3_pressed = False
+        self.button_0_pressed = False
+        # self.rate = rospy.Rate(200)  # 设置频率为200Hz
+
+    def joy_callback(self, data):
+        if data.buttons[3] == 1 and not self.button_3_pressed:
+            joy_to_motor_controller.controller.enable()
+            self.controller.send_motor_control_command(torque=1.0, target_angle=math.pi, target_velocity=30, Kp=1.0, Kd=1.0)
+            # jog_vel = 5  # rad/s
+            # uint_value = self.controller._float_to_uint(jog_vel, self.controller.V_MIN, self.controller.V_MAX, 16)
+            # jog_vel_bytes = self.controller.format_data(data=[uint_value], format="u16", type="encode")[:2][::-1]
+
+            # data1 = [0x05, 0x70, 0x00, 0x00, 0x07, 0x01] + jog_vel_bytes
+            # self.controller.clear_can_rx()
+            # received_msg_data, received_msg_arbitration_id = self.controller.send_receive_can_message(
+            # cmd_mode=self.controller.CmdModes.SINGLE_PARAM_WRITE, data2=self.controller.MAIN_CAN_ID, data1=data1
+            # )
+            # self.controller.parse_received_msg(received_msg_data, received_msg_arbitration_id)
+
+            # joy_to_motor_controller.controller.start_motor()
+
+
+
+            self.button_3_pressed = True
+        elif data.buttons[3] == 0 and self.button_3_pressed:
+            # self.controller.send_motor_control_command(torque=0.0, target_angle=0.0, target_velocity=0.0, Kp=0.0, Kd=0.0)
+            joy_to_motor_controller.controller.disable()
+            self.button_3_pressed = False
+
+        if data.buttons[0] == 1 and not self.button_0_pressed:
+            joy_to_motor_controller.controller.enable()
+            self.controller.send_motor_control_command(torque=1.0, target_angle=math.pi, target_velocity=30, Kp=1.0, Kd=1.0)
+            jog_vel = -5  # rad/s
+            uint_value = self.controller._float_to_uint(jog_vel, self.controller.V_MIN, self.controller.V_MAX, 16)
+            jog_vel_bytes = self.controller.format_data(data=[uint_value], format="u16", type="encode")[:2][::-1]
+
+            data1 = [0x05, 0x70, 0x00, 0x00, 0x07, 0x01] + jog_vel_bytes
+            self.controller.clear_can_rx()
+            received_msg_data, received_msg_arbitration_id = self.controller.send_receive_can_message(
+            cmd_mode=self.controller.CmdModes.SINGLE_PARAM_WRITE, data2=self.controller.MAIN_CAN_ID, data1=data1
+            )
+            self.controller.parse_received_msg(received_msg_data, received_msg_arbitration_id)
+            # joy_to_motor_controller.controller.reverse_motor()
+            # self.controller.send_motor_control_command(torque=-1.0, target_angle=-3.14, target_velocity=-30.0, Kp=100.0, Kd=1.0)
+            self.button_0_pressed = True
+        elif data.buttons[0] == 0 and self.button_0_pressed:
+            # self.controller.send_motor_control_command(torque=0.0, target_angle=0.0, target_velocity=0.0, Kp=0.0, Kd=0.0)
+            joy_to_motor_controller.controller.disable()
+            self.button_0_pressed = False
+
+    def run(self):
+        rospy.spin()
+
+if __name__ == '__main__':
+    joy_to_motor_controller = JoyToMotorController()
+    # joy_to_motor_controller.controller.set_run_mode(joy_to_motor_controller.controller.RunModes.CONTROL_MODE)
+    joy_to_motor_controller.run()
+
+    # joy_to_motor_controller.controller.send_motor_control_command(torque=1.0, target_angle=180.0, target_velocity=5.0, Kp=100.0, Kd=1.0)
+
+
+    # joy_to_motor_controller.controller.send_motor_control_command(torque=1.0, target_angle=math.pi, target_velocity=0.1, Kp=100.0, Kd=1.0)
+
+
+# class JoyToMotorController:
+#     def __init__(self):
+#         rospy.init_node('joy_to_pcan_node')
+#         # 创建PCAN适配器对象
+#         self.bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=500000)
+#         # self.bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=500000)
+
+#         # 使用PCAN适配器对象初始化CANMotorController
+#         self.controller = CANMotorController(self.bus)
+#         self.sub = rospy.Subscriber('joy', Joy, self.joy_callback)
+#         self.button_3_pressed = False
+#         self.button_0_pressed = False
+
+#     def joy_callback(self, data):
+#         if data.buttons[3] == 1 and not self.button_3_pressed:
+#             self.controller.send_motor_control_command(torque=1.0, target_angle=0.0, target_velocity=30.0, Kp=100.0, Kd=1.0)
+#             self.button_3_pressed = True
+#         elif data.buttons[3] == 0 and self.button_3_pressed:
+#             self.controller.send_motor_control_command(torque=0.0, target_angle=0.0, target_velocity=0.0, Kp=0.0, Kd=0.0)
+#             self.button_3_pressed = False
+
+#         if data.buttons[0] == 1 and not self.button_0_pressed:
+#             self.controller.send_motor_control_command(torque=-1.0, target_angle=0.0, target_velocity=-30.0, Kp=100.0, Kd=1.0)
+#             self.button_0_pressed = True
+#         elif data.buttons[0] == 0 and self.button_0_pressed:
+#             self.controller.send_motor_control_command(torque=0.0, target_angle=0.0, target_velocity=0.0, Kp=0.0, Kd=0.0)
+#             self.button_0_pressed = False
+
+#     def run(self):
+#         rospy.spin()
+
+# if __name__ == '__main__':
+#     joy_to_motor_controller = JoyToMotorController()
+#     joy_to_motor_controller.run()

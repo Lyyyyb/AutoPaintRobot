@@ -199,6 +199,7 @@ target_link_libraries(message_to_serial_node
 # )
 catkin_install_python(PROGRAMS
   scripts/joy_to_pcan_node.py
+  scripts/pcan_cybergear.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

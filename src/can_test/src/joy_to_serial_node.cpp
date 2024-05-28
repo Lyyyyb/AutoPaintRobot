@@ -37,10 +37,11 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
     } else if (joy->buttons[2] == 1) {
         // 增加水泵占空比
         pump_duty = std::min(pump_duty + 10, 100); // 最大占空比为100
-    } else if (joy->buttons[1] == 1) {
-        // 减少水泵占空比
-        pump_duty = std::max(pump_duty - 10, 0); // 最小占空比为0
-    }
+    } 
+    // else if (joy->buttons[1] == 1) {
+    //     // 减少水泵占空比
+    //     pump_duty = std::max(pump_duty - 10, 0); // 最小占空比为0
+    // }
 
     // 构建并发送水泵控制指令
     std::ostringstream pump_cmd;
