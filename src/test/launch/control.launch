@@ -1,0 +1,5 @@
+<launch>
+  <rosparam file="$(find test)/config/control.yaml" command="load"/>
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+        output="screen" args="LF_wheel_controller RF_wheel_controller LB_wheel_controller RB_wheel_controller"/>
+</launch>

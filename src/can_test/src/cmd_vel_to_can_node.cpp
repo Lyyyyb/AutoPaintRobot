@@ -518,6 +518,9 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg, ros::Publisher& p
     left_duty_cycle.value = duty_cycle_left;
     right_duty_cycle.value = duty_cycle_right;
 
+    // 打印占空比的字节值
+    ROS_INFO("Left wheel duty cycle bytes: %02X %02X", left_duty_cycle.bytes[0], left_duty_cycle.bytes[1]);
+    ROS_INFO("Right wheel duty cycle bytes: %02X %02X", right_duty_cycle.bytes[0], right_duty_cycle.bytes[1]);
     // 准备发送的数据
     uint8_t data_l[] = {0x2B, 0x01, 0x20, 0x00, left_duty_cycle.bytes[0], left_duty_cycle.bytes[1], 0x00, 0x00};
     uint8_t data_r[] = {0x2B, 0x01, 0x20, 0x00, right_duty_cycle.bytes[0], right_duty_cycle.bytes[1], 0x00, 0x00};

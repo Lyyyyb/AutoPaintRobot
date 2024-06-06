@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="test">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.171399560462993 -0.0242066861825329 0.211672644624064"
+        rpy="0 0 0" />
+      <mass
+        value="121.217324628281" />
+      <inertia
+        ixx="62.1235966421107"
+        ixy="-1.54499480334561"
+        ixz="0.458981565982811"
+        iyy="160.733294857965"
+        iyz="3.44486084682983"
+        izz="166.056664129385" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="LF_wheel">
+    <inertial>
+      <origin
+        xyz="3.10862446895044E-15 0.0290230131119653 -6.55031584528842E-15"
+        rpy="0 0 0" />
+      <mass
+        value="52.2169190758616" />
+      <inertia
+        ixx="1.77452354904934"
+        ixy="1.24587940601148E-08"
+        ixz="-1.31024531626335E-06"
+        iyy="2.50131402110028"
+        iyz="-9.06991146792949E-08"
+        izz="1.77453290744985" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/LF_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/LF_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint
+    name="LF_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="1.0033 1.016 -0.47182"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="LF_wheel" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <transmission name="trans_LF_wheel">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="LF_wheel_joint">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="motor_LF">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+  </transmission>
+  <link
+    name="RF_wheel">
+    <inertial>
+      <origin
+        xyz="-6.88338275267597E-15 -0.029023013111966 -1.11022302462516E-15"
+        rpy="0 0 0" />
+      <mass
+        value="52.2169190758616" />
+      <inertia
+        ixx="1.77453124365927"
+        ixy="8.24098864002053E-08"
+        ixz="3.81037561004767E-06"
+        iyy="2.50131402110028"
+        iyz="3.98768354217562E-08"
+        izz="1.77452521283992" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/RF_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/RF_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RF_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="1.00330000000075 -1.016 -0.471818529378031"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="RF_wheel" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <transmission name="trans_RF_wheel">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="RF_wheel_joint">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="motor_RF">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+  </transmission>
+  <link
+    name="LB_wheel">
+    <inertial>
+      <origin
+        xyz="-6.21724893790088E-15 0.029023013111965 -3.66373598126302E-15"
+        rpy="0 0 0" />
+      <mass
+        value="52.2169190758614" />
+      <inertia
+        ixx="1.77453269284909"
+        ixy="-8.96730164858362E-08"
+        ixz="1.91807432583978E-06"
+        iyy="2.50131402110028"
+        iyz="-1.84472535331099E-08"
+        izz="1.77452376365009" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/LB_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/LB_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LB_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-1.5113 1.016 -0.47182"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="LB_wheel" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <transmission name="trans_LB_wheel">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="LB_wheel_joint">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="motor_LB">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+  </transmission>
+  <link
+    name="RB_wheel">
+    <inertial>
+      <origin
+        xyz="-3.33066907387547E-15 -0.0290230131119646 -6.55031584528842E-15"
+        rpy="0 0 0" />
+      <mass
+        value="52.2169190758611" />
+      <inertia
+        ixx="1.77452348889691"
+        ixy="1.01658266648705E-08"
+        ixz="1.07247104390985E-06"
+        iyy="2.50131402110026"
+        iyz="9.09846480667055E-08"
+        izz="1.77453296760223" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/RB_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://test/meshes/RB_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RB_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-1.5113 -1.016 -0.47182"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="RB_wheel" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <transmission name="trans_RB_wheel">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="RB_wheel_joint">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="motor_RB">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+ </transmission>
+ <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+ </gazebo>
+</robot>

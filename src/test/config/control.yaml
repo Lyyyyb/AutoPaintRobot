@@ -1,0 +1,12 @@
+LF_wheel_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: LF_wheel_joint
+RF_wheel_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: RF_wheel_joint
+LB_wheel_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: LB_wheel_joint
+RB_wheel_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: RB_wheel_joint
