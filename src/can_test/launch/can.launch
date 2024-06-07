@@ -10,14 +10,13 @@
     </node> -->
     <!-- topic 转 CAN --> <!-- CAN 转 topic -->
     <node pkg="socketcan_bridge" name="socketcan_bridge_node" type="socketcan_bridge_node" output="screen">
-        <param name="can_device" value="can0" />
+        <param name="can_device" value="vcan0" />
     </node>
 
     <!-- 操纵杆输入节点 -->
     <node name="joy_node" pkg="joy" type="joy_node" output="screen">
         <param name="publish_rate" type="double" value="200"/> <!-- 设置消息发布频率为50Hz -->
     </node>
-
 
     <!-- 将操纵杆输入转换为 cmd_vel 指令 -->
     <node pkg="can_test" name="joy_to_cmd_vel_node" type="joy_to_cmd_vel_node" output="screen">
@@ -37,6 +36,7 @@
     </node>
     <!-- 启动 joy_control_node 节点 -->
     <!-- <node pkg="can_test" name="joy_to_serial_node" type="joy_to_serial_node" output="screen"/> -->
-    <node pkg="can_test" name="joy_to_message_node" type="joy_to_message_node" output="screen"/>
-    <node pkg="can_test" name="message_to_serial_node" type="message_to_serial_node" output="screen"/>
+    <!-- <node pkg="can_test" name="joy_to_message_node" type="joy_to_message_node" output="screen"/>
+    <node pkg="can_test" name="message_to_serial_node" type="message_to_serial_node" output="screen"/> -->
 </launch>
+

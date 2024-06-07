@@ -48,8 +48,8 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& msg) {
     MIN_ANGULAR_VELOCITY = std::max(0.2, MIN_ANGULAR_VELOCITY);
 
     // 计算最终的线速度和角速度
-    double linear_vel = msg->axes[3] * MIN_ANGULAR_VELOCITY;//MIN_ANGULAR_VELOCITY
-    double angular_vel = -msg->axes[1] * MAX_LINEAR_SPEED;//MAX_LINEAR_SPEED
+    double linear_vel =  msg->axes[1] * MAX_LINEAR_SPEED;//MIN_ANGULAR_VELOCITY
+    double angular_vel = msg->axes[3] *MIN_ANGULAR_VELOCITY;//MAX_LINEAR_SPEEDMIN_ANGULAR_VELOCITY
 
     // 设置速度指令
     cmd_vel.linear.x = linear_vel;
